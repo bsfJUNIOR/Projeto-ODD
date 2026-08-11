@@ -1,0 +1,938 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JDialog.java to edit this template
+ */
+package telas;
+
+import entidades.Despesa;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import javax.swing.ButtonGroup;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.text.MaskFormatter;
+import persistencia.HibernateUtil;
+/**
+ *
+ * @author Usuario
+ */
+public class CadastroDespesas extends javax.swing.JDialog {
+    Despesa despesa = new Despesa();
+    List<Despesa> listaDespesas = new ArrayList<>();
+    boolean editando = false;
+          
+    public CadastroDespesas(java.awt.Frame parent, boolean modal) {
+
+        super(parent, modal);
+
+        initComponents();
+        
+            TabelaCDespesa.addMouseListener(
+        new java.awt.event.MouseAdapter() {
+
+            public void mouseClicked(
+                    java.awt.event.MouseEvent evt) {
+
+                TabelaCDespesaMouseClicked(evt);
+            }
+        }
+    );
+
+        configurarRadioButtons();
+        configurarCampoData();
+        configurarCampoValor();
+
+        montaTabela();
+
+        validaCampos("inicio");
+
+        setLocationRelativeTo(null);
+        
+    }
+    
+    public void configurarCampoData() {
+
+    try {
+
+        javax.swing.text.MaskFormatter mascara =
+                new javax.swing.text.MaskFormatter("##/##/####");
+
+        mascara.setPlaceholderCharacter('_');
+
+        mascara.install(ctVencimentoDespesa);
+
+    } catch (Exception e) {
+
+        javax.swing.JOptionPane.showMessageDialog(
+                null,
+                "Erro ao configurar campo de data!"
+        );
+    }
+}
+    
+    public void configurarRadioButtons() {
+
+        javax.swing.ButtonGroup grupo = new javax.swing.ButtonGroup();
+        grupo.add(cbFixaDespesa);
+        grupo.add(cbVariavelDespesa);
+}
+
+    public void configurarCampoValor() {
+
+    ctValorDespesa.addKeyListener(
+        new java.awt.event.KeyAdapter() {
+
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+
+                char c = evt.getKeyChar();
+
+                if (!Character.isDigit(c)
+                        && c != '.') {
+
+                    evt.consume();
+                }
+            }
+        });
+}
+    
+    /**
+     * Creates new form CadastroDespesas
+     */
+    
+    public void limparCampos() {
+        
+    ctNomeDespesa.setText("");
+    ctDescricaoDespesa.setText("");
+    ctValorDespesa.setText("");
+    ctVencimentoDespesa.setText("");
+    cbFixaDespesa.setSelected(false);
+    cbVariavelDespesa.setSelected(false);
+    cbxStatusDespsa.setSelectedIndex(0);
+}
+    
+    
+    public void validaCampos(String operacao){
+                if (operacao.equals("inicio")) {
+
+            ctNomeDespesa.setEnabled(false);
+            ctDescricaoDespesa.setEnabled(false);
+            ctValorDespesa.setEnabled(false);
+            ctVencimentoDespesa.setEnabled(false);
+
+            cbFixaDespesa.setEnabled(false);
+            cbVariavelDespesa.setEnabled(false);
+
+            btNovoDespesa.setEnabled(true);
+
+            btSalvarDespesa.setEnabled(false);
+            btEditarDespesa.setEnabled(false);
+            btExcluirDespesa.setEnabled(false);
+            btCancelarDespesa.setEnabled(false);
+            cbxStatusDespsa.setEnabled(false);
+
+        } else if (operacao.equals("novo")) {
+
+            ctNomeDespesa.setEnabled(true);
+            ctDescricaoDespesa.setEnabled(true);
+            ctValorDespesa.setEnabled(true);
+            ctVencimentoDespesa.setEnabled(true);
+
+            cbFixaDespesa.setEnabled(true);
+            cbVariavelDespesa.setEnabled(true);
+
+            btNovoDespesa.setEnabled(false);
+
+            btSalvarDespesa.setEnabled(true);
+            btEditarDespesa.setEnabled(false);
+            btExcluirDespesa.setEnabled(false);
+            btCancelarDespesa.setEnabled(true);
+            cbxStatusDespsa.setEnabled(true);
+
+        } else if (operacao.equals("selecionado")) {
+
+            ctNomeDespesa.setEnabled(false);
+            ctDescricaoDespesa.setEnabled(false);
+            ctValorDespesa.setEnabled(false);
+            ctVencimentoDespesa.setEnabled(false);
+
+            cbFixaDespesa.setEnabled(false);
+            cbVariavelDespesa.setEnabled(false);
+
+            btNovoDespesa.setEnabled(false);
+
+            btSalvarDespesa.setEnabled(false);
+            btEditarDespesa.setEnabled(true);
+            btExcluirDespesa.setEnabled(true);
+            btCancelarDespesa.setEnabled(true);
+            cbxStatusDespsa.setEnabled(false);
+        }
+}
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+        public void montaTabela() {
+
+            try {
+
+            listaDespesas =
+                HibernateUtil.getSession()
+                .createQuery("from Despesa")
+                .list();
+
+            DefaultTableModel modelo =
+                new DefaultTableModel();
+
+            modelo.addColumn("ID");
+            modelo.addColumn("Nome");
+            modelo.addColumn("Valor");
+            modelo.addColumn("Tipo");
+            modelo.addColumn("Vencimento");
+
+            for (Despesa d : listaDespesas) {
+
+                String dataFormatada = "";
+
+            if (d.getDataVencimento() != null) {
+
+                dataFormatada =
+                        new SimpleDateFormat("dd/MM/yyyy")
+                        .format(d.getDataVencimento());
+            }
+
+            modelo.addRow(new Object[]{
+
+                d.getId(),
+
+                d.getDespesa(),
+
+                NumberFormat.getCurrencyInstance(
+                        new Locale("pt", "BR"))
+                        .format(d.getValor()),
+
+                d.getTipo(),
+
+                dataFormatada
+            });
+        }
+
+        TabelaCDespesa.setModel(modelo);
+
+    } catch (Exception e) {
+
+        e.printStackTrace();
+
+        JOptionPane.showMessageDialog(
+                null,
+                "Erro ao carregar tabela!\n"
+                + e.toString()
+        );
+    }
+}
+    
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        buttonGroup1 = new javax.swing.ButtonGroup();
+        buttonGroup2 = new javax.swing.ButtonGroup();
+        buttonGroup3 = new javax.swing.ButtonGroup();
+        buttonGroup4 = new javax.swing.ButtonGroup();
+        buttonGroup5 = new javax.swing.ButtonGroup();
+        buttonGroup6 = new javax.swing.ButtonGroup();
+        buttonGroup7 = new javax.swing.ButtonGroup();
+        buttonGroup8 = new javax.swing.ButtonGroup();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        TabelaCDespesa = new javax.swing.JTable();
+        jPanel1 = new javax.swing.JPanel();
+        jLabel2 = new javax.swing.JLabel();
+        ctNomeDespesa = new javax.swing.JTextField();
+        jLabel3 = new javax.swing.JLabel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        ctDescricaoDespesa = new javax.swing.JTextArea();
+        jLabel4 = new javax.swing.JLabel();
+        ctValorDespesa = new javax.swing.JTextField();
+        jLabel5 = new javax.swing.JLabel();
+        btSalvarDespesa = new javax.swing.JButton();
+        btEditarDespesa = new javax.swing.JButton();
+        btExcluirDespesa = new javax.swing.JButton();
+        btCancelarDespesa = new javax.swing.JButton();
+        ctVencimentoDespesa = new javax.swing.JFormattedTextField();
+        jLabel6 = new javax.swing.JLabel();
+        btNovoDespesa = new javax.swing.JButton();
+        cbFixaDespesa = new javax.swing.JCheckBox();
+        cbVariavelDespesa = new javax.swing.JCheckBox();
+        cbxStatusDespsa = new javax.swing.JComboBox<>();
+        jLabel7 = new javax.swing.JLabel();
+        jLabel1 = new javax.swing.JLabel();
+        jMenuBar1 = new javax.swing.JMenuBar();
+        btmnVoltarDespesa = new javax.swing.JMenu();
+        btmnDespesaVoltar = new javax.swing.JMenuItem();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+
+        TabelaCDespesa.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null}
+            },
+            new String [] {
+                "ID", "Valor", "Tipo", "Vencimento", "Status"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.Integer.class, java.lang.Double.class, java.lang.String.class, java.lang.Double.class, java.lang.Object.class
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+        });
+        jScrollPane1.setViewportView(TabelaCDespesa);
+
+        jLabel2.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        jLabel2.setText("Nome da Despesa:");
+
+        ctNomeDespesa.setText("Ex: Energia");
+        ctNomeDespesa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ctNomeDespesaActionPerformed(evt);
+            }
+        });
+
+        jLabel3.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        jLabel3.setText("Descrição:");
+
+        ctDescricaoDespesa.setColumns(20);
+        ctDescricaoDespesa.setRows(5);
+        jScrollPane2.setViewportView(ctDescricaoDespesa);
+
+        jLabel4.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        jLabel4.setText("Valor:");
+
+        ctValorDespesa.setToolTipText("");
+        ctValorDespesa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ctValorDespesaActionPerformed(evt);
+            }
+        });
+
+        jLabel5.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        jLabel5.setText("Tipo:");
+
+        btSalvarDespesa.setText("Salvar");
+        btSalvarDespesa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btSalvarDespesaActionPerformed(evt);
+            }
+        });
+
+        btEditarDespesa.setText("Editar");
+        btEditarDespesa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btEditarDespesaActionPerformed(evt);
+            }
+        });
+
+        btExcluirDespesa.setText("Excluir");
+        btExcluirDespesa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btExcluirDespesaActionPerformed(evt);
+            }
+        });
+
+        btCancelarDespesa.setText("Cancelar");
+        btCancelarDespesa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btCancelarDespesaActionPerformed(evt);
+            }
+        });
+
+        ctVencimentoDespesa.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.DateFormatter()));
+        ctVencimentoDespesa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ctVencimentoDespesaActionPerformed(evt);
+            }
+        });
+
+        jLabel6.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        jLabel6.setText("Data Vencimento:");
+
+        btNovoDespesa.setText("Novo");
+        btNovoDespesa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btNovoDespesaActionPerformed(evt);
+            }
+        });
+
+        cbFixaDespesa.setText("Fixa");
+        cbFixaDespesa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cbFixaDespesaActionPerformed(evt);
+            }
+        });
+
+        cbVariavelDespesa.setText("Variavel");
+        cbVariavelDespesa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cbVariavelDespesaActionPerformed(evt);
+            }
+        });
+
+        cbxStatusDespsa.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Selecionar", "Pendente", "Pago" }));
+        cbxStatusDespsa.setToolTipText("");
+        cbxStatusDespsa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cbxStatusDespsaActionPerformed(evt);
+            }
+        });
+
+        jLabel7.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        jLabel7.setText("Status da Despesa:");
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(btNovoDespesa)
+                        .addGap(18, 18, 18)
+                        .addComponent(btSalvarDespesa)
+                        .addGap(18, 18, 18)
+                        .addComponent(btEditarDespesa)
+                        .addGap(18, 18, 18)
+                        .addComponent(btExcluirDespesa)
+                        .addGap(18, 18, 18)
+                        .addComponent(btCancelarDespesa))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(ctNomeDespesa, javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 305, Short.MAX_VALUE))
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 393, Short.MAX_VALUE)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                        .addComponent(ctVencimentoDespesa, javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addComponent(jLabel6, javax.swing.GroupLayout.Alignment.LEADING))
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(cbFixaDespesa)
+                                        .addGap(18, 18, 18)
+                                        .addComponent(cbVariavelDespesa)))
+                                .addGap(257, 257, 257))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(388, 388, 388)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel5)
+                                    .addComponent(jLabel7)
+                                    .addComponent(cbxStatusDespsa, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(0, 0, Short.MAX_VALUE))))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel4)
+                            .addComponent(ctValorDespesa, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(26, 26, 26)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(ctNomeDespesa, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(22, 22, 22)
+                        .addComponent(jLabel3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel6)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(ctVencimentoDespesa, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(50, 50, 50)
+                        .addComponent(jLabel5)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(cbFixaDespesa)
+                            .addComponent(cbVariavelDespesa))
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel7)))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel4)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(ctValorDespesa, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(cbxStatusDespsa, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(46, 46, 46)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btSalvarDespesa)
+                    .addComponent(btEditarDespesa)
+                    .addComponent(btExcluirDespesa)
+                    .addComponent(btCancelarDespesa)
+                    .addComponent(btNovoDespesa))
+                .addContainerGap(15, Short.MAX_VALUE))
+        );
+
+        jLabel1.setFont(new java.awt.Font("Arial", 1, 24)); // NOI18N
+        jLabel1.setText("DADOS DA DESPESA");
+
+        btmnVoltarDespesa.setText("Voltar");
+
+        btmnDespesaVoltar.setText("Voltar");
+        btmnDespesaVoltar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btmnDespesaVoltarActionPerformed(evt);
+            }
+        });
+        btmnVoltarDespesa.add(btmnDespesaVoltar);
+
+        jMenuBar1.add(btmnVoltarDespesa);
+
+        setJMenuBar(jMenuBar1);
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane1)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
+            .addGroup(layout.createSequentialGroup()
+                .addGap(29, 29, 29)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 384, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jLabel1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 293, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void ctNomeDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ctNomeDespesaActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_ctNomeDespesaActionPerformed
+
+    private void btmnDespesaVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btmnDespesaVoltarActionPerformed
+        // TODO add your handling code here:
+        dispose();
+    }//GEN-LAST:event_btmnDespesaVoltarActionPerformed
+
+    private void btSalvarDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btSalvarDespesaActionPerformed
+        // TODO add your handling code here:
+            try {
+
+        if (camposObrigatorios()) {
+
+            despesa.setDespesa(
+                    ctNomeDespesa.getText()
+            );
+
+            despesa.setDescricao(
+                    ctDescricaoDespesa.getText()
+            );
+
+            String valorTexto =
+                    ctValorDespesa.getText()
+                    .replace(",", ".");
+
+            despesa.setValor(
+                    Double.parseDouble(valorTexto)
+            );
+
+            SimpleDateFormat sdf =
+                    new SimpleDateFormat("dd/MM/yyyy");
+
+            despesa.setDataVencimento(
+                    sdf.parse(
+                            ctVencimentoDespesa.getText()
+                    )
+            );
+
+            if (cbFixaDespesa.isSelected()) {
+
+                despesa.setTipo("Fixa");
+
+            } else {
+
+                despesa.setTipo("Variável");
+            }
+            
+            despesa.setStatus(
+                cbxStatusDespsa
+                .getSelectedItem()
+                .toString()
+            );
+
+           HibernateUtil.beginTransaction();
+
+            if (editando) {
+
+            HibernateUtil.getSession().merge(despesa);
+
+            } else {
+
+            HibernateUtil.getSession().persist(despesa);
+}
+
+            HibernateUtil.commitTransaction();
+
+            HibernateUtil.closeSession();
+            
+            editando = false;
+
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Despesa salva com sucesso!"
+            );
+
+            montaTabela();
+            limparCampos();
+            validaCampos("inicio");
+        }
+        
+    } catch (Exception e) {
+
+        e.printStackTrace();
+
+        JOptionPane.showMessageDialog(
+                null,
+                "Erro ao salvar!\n"
+                + e.toString()
+            );
+        }
+    }//GEN-LAST:event_btSalvarDespesaActionPerformed
+
+    private void btNovoDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btNovoDespesaActionPerformed
+        // TODO add your handling code here:
+        despesa = new Despesa();
+        editando = false;
+        limparCampos();
+        validaCampos("novo");
+    }//GEN-LAST:event_btNovoDespesaActionPerformed
+
+    private void btCancelarDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btCancelarDespesaActionPerformed
+        // TODO add your handling code here:
+        limparCampos();
+        TabelaCDespesa.clearSelection();
+        despesa = new Despesa();
+        editando = false;
+        validaCampos("inicio");
+    }//GEN-LAST:event_btCancelarDespesaActionPerformed
+
+        public Boolean camposObrigatorios() {
+
+        String mensagem = "";
+
+        Boolean retorno = true;
+
+        if (ctNomeDespesa.getText().equals("")) {
+
+            mensagem += "Nome da despesa obrigatório!\n";
+
+            retorno = false;
+        }
+
+        if (ctValorDespesa.getText().equals("")) {
+
+            mensagem += "Valor obrigatório!\n";
+
+            retorno = false;
+        }
+
+        if (ctVencimentoDespesa.getText().contains("_")) {
+
+            mensagem += "Data inválida!\n";
+
+            retorno = false;
+        }
+
+        if (!cbFixaDespesa.isSelected()
+                && !cbVariavelDespesa.isSelected()) {
+
+            mensagem += "Selecione o tipo!\n";
+
+            retorno = false;
+        }
+        
+        if (cbxStatusDespsa.getSelectedItem()
+            .equals("Selecionar")) {
+
+            mensagem += "Selecione o status da despesa!\n";
+
+            retorno = false;
+}
+
+        if (!mensagem.equals("")) {
+
+            JOptionPane.showMessageDialog(
+                    null,
+                    mensagem
+            );
+        }
+
+        return retorno;
+}
+        
+    private void TabelaCDespesaMouseClicked(java.awt.event.MouseEvent evt) {
+        despesa =
+                listaDespesas.get(
+                        TabelaCDespesa.getSelectedRow()
+                );
+        ctNomeDespesa.setText(
+                despesa.getDespesa()
+        );
+        ctDescricaoDespesa.setText(
+                despesa.getDescricao()
+        );
+        ctValorDespesa.setText(
+                String.valueOf(
+                        despesa.getValor()
+                )
+        );
+        ctVencimentoDespesa.setText(
+                new SimpleDateFormat("dd/MM/yyyy")
+                        .format(
+                                despesa.getDataVencimento()
+                        )
+        );
+
+        if (despesa.getTipo().equals("Fixa")) {
+
+            cbFixaDespesa.setSelected(true);
+
+        } else {
+
+            cbVariavelDespesa.setSelected(true);
+        }
+        
+        cbxStatusDespsa.setSelectedItem(
+        despesa.getStatus()
+        );
+
+        validaCampos("selecionado");
+    }
+    
+    private void btEditarDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btEditarDespesaActionPerformed
+        // TODO add your handling code here:
+        ctNomeDespesa.setEnabled(true);
+        ctDescricaoDespesa.setEnabled(true);
+        ctValorDespesa.setEnabled(true);
+        ctVencimentoDespesa.setEnabled(true);
+        cbFixaDespesa.setEnabled(true);
+        cbVariavelDespesa.setEnabled(true);
+        btSalvarDespesa.setEnabled(true);
+        cbxStatusDespsa.setEnabled(true);
+    }//GEN-LAST:event_btEditarDespesaActionPerformed
+
+    private void btExcluirDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btExcluirDespesaActionPerformed
+        // TODO add your handling code here:
+                try {
+            HibernateUtil.beginTransaction();
+            HibernateUtil.getSession().delete(despesa);
+            HibernateUtil.commitTransaction();
+            HibernateUtil.closeSession();
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Despesa excluída!"
+            );
+
+            montaTabela();
+
+            limparCampos();
+
+            validaCampos("inicio");
+
+        } catch (Exception e) {
+
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Erro ao excluir!\n"
+                    + e.getMessage()
+            );
+        }
+    }//GEN-LAST:event_btExcluirDespesaActionPerformed
+
+    private void cbFixaDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbFixaDespesaActionPerformed
+        // TODO add your handling code here:
+        ButtonGroup grupo = new ButtonGroup();
+        grupo.add(cbFixaDespesa);
+        grupo.add(cbVariavelDespesa);
+    }//GEN-LAST:event_cbFixaDespesaActionPerformed
+
+    private void cbVariavelDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbVariavelDespesaActionPerformed
+        // TODO add your handling code here:
+        ButtonGroup grupo = new ButtonGroup();
+        grupo.add(cbFixaDespesa);
+        grupo.add(cbVariavelDespesa);
+    }//GEN-LAST:event_cbVariavelDespesaActionPerformed
+
+    private void ctVencimentoDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ctVencimentoDespesaActionPerformed
+        // TODO add your handling code here:
+                try {
+
+            MaskFormatter mascara =
+                    new MaskFormatter("##/##/####");
+
+            mascara.setPlaceholderCharacter('_');
+
+            mascara.install(ctVencimentoDespesa);
+
+        } catch (Exception e) {
+
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Erro na máscara da data!"
+            );
+        }
+    }//GEN-LAST:event_ctVencimentoDespesaActionPerformed
+
+    private void ctValorDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ctValorDespesaActionPerformed
+        // TODO add your handling code here:
+                ctValorDespesa.addKeyListener(
+                new java.awt.event.KeyAdapter() {
+
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+
+                char c = evt.getKeyChar();
+
+                if (!Character.isDigit(c)
+                        && c != ','
+                        && c != '.') {
+
+                    evt.consume();
+                }
+            }
+        });
+    }//GEN-LAST:event_ctValorDespesaActionPerformed
+
+    private void cbxStatusDespsaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbxStatusDespsaActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_cbxStatusDespsaActionPerformed
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        
+                java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                CadastroDespesas dialog =
+                        new CadastroDespesas(
+                                new javax.swing.JFrame(),
+                                true
+                        );
+
+                dialog.addWindowListener(
+                        new java.awt.event.WindowAdapter() {
+
+                    @Override
+                    public void windowClosing(
+                            java.awt.event.WindowEvent e) {
+
+                        System.exit(0);
+                    }
+                });
+                dialog.setVisible(true);
+            }
+        });
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(CadastroDespesas.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(CadastroDespesas.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(CadastroDespesas.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(CadastroDespesas.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the dialog */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                CadastroDespesas dialog = new CadastroDespesas(new javax.swing.JFrame(), true);
+                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        System.exit(0);
+                    }
+                });
+                dialog.setVisible(true);
+            }
+        });
+    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JTable TabelaCDespesa;
+    private javax.swing.JButton btCancelarDespesa;
+    private javax.swing.JButton btEditarDespesa;
+    private javax.swing.JButton btExcluirDespesa;
+    private javax.swing.JButton btNovoDespesa;
+    private javax.swing.JButton btSalvarDespesa;
+    private javax.swing.JMenuItem btmnDespesaVoltar;
+    private javax.swing.JMenu btmnVoltarDespesa;
+    private javax.swing.ButtonGroup buttonGroup1;
+    private javax.swing.ButtonGroup buttonGroup2;
+    private javax.swing.ButtonGroup buttonGroup3;
+    private javax.swing.ButtonGroup buttonGroup4;
+    private javax.swing.ButtonGroup buttonGroup5;
+    private javax.swing.ButtonGroup buttonGroup6;
+    private javax.swing.ButtonGroup buttonGroup7;
+    private javax.swing.ButtonGroup buttonGroup8;
+    private javax.swing.JCheckBox cbFixaDespesa;
+    private javax.swing.JCheckBox cbVariavelDespesa;
+    private javax.swing.JComboBox<String> cbxStatusDespsa;
+    private javax.swing.JTextArea ctDescricaoDespesa;
+    private javax.swing.JTextField ctNomeDespesa;
+    private javax.swing.JTextField ctValorDespesa;
+    private javax.swing.JFormattedTextField ctVencimentoDespesa;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JMenuBar jMenuBar1;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    // End of variables declaration//GEN-END:variables
+}

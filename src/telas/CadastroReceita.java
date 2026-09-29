@@ -31,6 +31,12 @@ public class CadastroReceita extends javax.swing.JDialog {
         super(parent, modal);
 
         initComponents();
+        TabelaCReceita.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                TabelaCReceitaMouseClicked(evt);
+            }
+        });
         configurarRadioButtons();
         configurarCampoValor();
         montaTabela();
@@ -73,6 +79,31 @@ public class CadastroReceita extends javax.swing.JDialog {
     cbFixaReceita.setSelected(false);
     cbVariavelReceita.setSelected(false);
 }
+
+    private Double obterValorInformado() {
+        String texto = ctValorReceita.getText().trim().replace("R$", "").replace(',', '.').trim();
+
+        if (texto.length() == 0) {
+            return null;
+        }
+
+        try {
+            double valor = Double.parseDouble(texto);
+            if (Double.isNaN(valor) || Double.isInfinite(valor) || valor <= 0) {
+                return null;
+            }
+            return valor;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private void tratarErro(String operacao, Exception e) {
+        HibernateUtil.rollbackTransaction();
+        HibernateUtil.closeSession();
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Não foi possível " + operacao + ".\nTente novamente.");
+    }
     
     public void validaCampos(String operacao) {
 
@@ -132,13 +163,13 @@ public class CadastroReceita extends javax.swing.JDialog {
 
         Boolean retorno = true;
 
-        if (ctNomeReceita.getText().equals("")) {
+        if (ctNomeReceita.getText().trim().equals("")) {
             mensagem += "Nome da receita obrigatório!\n";
             retorno = false;
         }
 
-        if (ctValorReceita.getText().equals("")) {
-            mensagem += "Valor obrigatório!\n";
+        if (obterValorInformado() == null) {
+            mensagem += "Informe um valor maior que zero!\n";
             retorno = false;
         }
 
@@ -173,13 +204,18 @@ public class CadastroReceita extends javax.swing.JDialog {
                     .createQuery("from Receita")
                     .list();
 
-            DefaultTableModel modelo =
-                    new DefaultTableModel();
+            DefaultTableModel modelo = new DefaultTableModel(
+                    new Object[]{"ID", "Nome", "Valor", "Tipo"}, 0) {
+                @Override
+                public Class<?> getColumnClass(int coluna) {
+                    return coluna == 0 ? Long.class : String.class;
+                }
 
-            modelo.addColumn("ID");
-            modelo.addColumn("Nome");
-            modelo.addColumn("Valor");
-            modelo.addColumn("Tipo");
+                @Override
+                public boolean isCellEditable(int linha, int coluna) {
+                    return false;
+                }
+            };
 
             for (Receita r : listaReceitas) {
 
@@ -191,30 +227,21 @@ public class CadastroReceita extends javax.swing.JDialog {
 
                     NumberFormat.getCurrencyInstance(
                             new Locale("pt", "BR"))
-                            .format(r.getValor()),
+                            .format(r.getValor() == null ? 0.0 : r.getValor()),
 
                     r.getTipo()
                 });
             }
 
             TabelaCReceita.setModel(modelo);
-            TabelaCReceita.addMouseListener(new java.awt.event.MouseAdapter() {
-
-    public void mouseClicked(java.awt.event.MouseEvent evt) {
-
-        TabelaCReceitaMouseClicked(evt);
-        }
-    });
 
         } catch (Exception e) {
 
             e.printStackTrace();
-
-        JOptionPane.showMessageDialog(
-            null,
-            "Erro ao carregar tabela!\n"
-            + e.toString()
-        );}
+            JOptionPane.showMessageDialog(this, "Não foi possível carregar a tabela de receitas.");
+        } finally {
+            HibernateUtil.closeSession();
+        }
     }
     
         
@@ -471,25 +498,14 @@ public class CadastroReceita extends javax.swing.JDialog {
     }//GEN-LAST:event_btNovoReceitaActionPerformed
 
     private void btSalvarReceitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btSalvarReceitaActionPerformed
-        // TODO add your handling code here:
-                    try {
+        try {
+            if (!camposObrigatorios()) {
+                return;
+            }
 
-        if (camposObrigatorios()) {
-
-            receita.setNome(ctNomeReceita.getText());
-
-            receita.setDescricao(
-                    ctDescricaoReceita.getText()
-            );
-
-            receita.setValor(
-                    Double.parseDouble(
-                            ctValorReceita.getText()
-                                    .replace("R$", "")
-                                    .replace(",", ".")
-                                    .trim()
-                    )
-            );
+            receita.setNome(ctNomeReceita.getText().trim());
+            receita.setDescricao(ctDescricaoReceita.getText());
+            receita.setValor(obterValorInformado());
 
             if (cbFixaReceita.isSelected()) {
 
@@ -513,8 +529,6 @@ public class CadastroReceita extends javax.swing.JDialog {
 
             HibernateUtil.commitTransaction();
 
-            HibernateUtil.closeSession();
-            
             editando = false;
 
             JOptionPane.showMessageDialog(
@@ -524,50 +538,32 @@ public class CadastroReceita extends javax.swing.JDialog {
 
             montaTabela();
 
+            receita = new Receita();
             limparCampos();
 
             validaCampos("inicio");
+        } catch (Exception e) {
+            tratarErro("salvar a receita", e);
+        } finally {
+            HibernateUtil.closeSession();
         }
-
-    } catch (Exception e) {
-
-        e.printStackTrace();
-
-        JOptionPane.showMessageDialog(
-            null,
-            "Erro ao carregar tabela!\n"
-            + e.toString()
-        );}
     }//GEN-LAST:event_btSalvarReceitaActionPerformed
 
     private void btEditarReceitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btEditarReceitaActionPerformed
-        // TODO add your handling code here:
-            editando = true;
-                try {
-
-            validaCampos("novo");
-            ctNomeReceita.setEnabled(true);
-            ctDescricaoReceita.setEnabled(true);
-            ctValorReceita.setEnabled(true);
-            cbFixaReceita.setEnabled(true);
-            cbVariavelReceita.setEnabled(true);
-            btSalvarReceita.setEnabled(true);
-            
-            
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-        JOptionPane.showMessageDialog(
-            null,
-            "Erro ao carregar tabela!\n"
-            + e.toString()
-        );}
+        if (receita == null || receita.getId() == null) {
+            JOptionPane.showMessageDialog(this, "Selecione uma receita para editar.");
+            return;
+        }
+        editando = true;
+        validaCampos("novo");
     }//GEN-LAST:event_btEditarReceitaActionPerformed
 
     private void btExcluirReceitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btExcluirReceitaActionPerformed
-        // TODO add your handling code here:
-                try {
+        if (receita == null || receita.getId() == null) {
+            JOptionPane.showMessageDialog(this, "Selecione uma receita para excluir.");
+            return;
+        }
+        try {
 
             HibernateUtil.beginTransaction();
 
@@ -576,8 +572,6 @@ public class CadastroReceita extends javax.swing.JDialog {
 
             HibernateUtil.commitTransaction();
 
-            HibernateUtil.closeSession();
-
             JOptionPane.showMessageDialog(
                     null,
                     "Receita excluída!"
@@ -585,19 +579,17 @@ public class CadastroReceita extends javax.swing.JDialog {
 
             montaTabela();
 
+            receita = new Receita();
+            editando = false;
             limparCampos();
 
             validaCampos("inicio");
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-        JOptionPane.showMessageDialog(
-            null,
-            "Erro ao carregar tabela!\n"
-            + e.toString()
-        );}
+            tratarErro("excluir a receita", e);
+        } finally {
+            HibernateUtil.closeSession();
+        }
     }//GEN-LAST:event_btExcluirReceitaActionPerformed
 
     private void btCancelarReceitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btCancelarReceitaActionPerformed
@@ -612,30 +604,34 @@ public class CadastroReceita extends javax.swing.JDialog {
         private void TabelaCReceitaMouseClicked(
             java.awt.event.MouseEvent evt) {
 
-        receita =
-                listaReceitas.get(
-                        TabelaCReceita.getSelectedRow()
-                );
+        int linhaSelecionada = TabelaCReceita.getSelectedRow();
+        if (linhaSelecionada < 0 || linhaSelecionada >= listaReceitas.size()) {
+            return;
+        }
+
+        receita = listaReceitas.get(linhaSelecionada);
 
         ctNomeReceita.setText(
-                receita.getNome()
+                receita.getNome() == null ? "" : receita.getNome()
         );
 
         ctDescricaoReceita.setText(
-                receita.getDescricao()
+                receita.getDescricao() == null ? "" : receita.getDescricao()
         );
 
         ctValorReceita.setText(
                 String.valueOf(
-                        receita.getValor()
+                        receita.getValor() == null ? "" : receita.getValor()
                 )
         );
 
-        if (receita.getTipo().equals("Fixa")) {
+        cbFixaReceita.setSelected(false);
+        cbVariavelReceita.setSelected(false);
+        if ("Fixa".equals(receita.getTipo())) {
 
             cbFixaReceita.setSelected(true);
 
-        } else {
+        } else if ("Variável".equals(receita.getTipo())) {
 
             cbVariavelReceita.setSelected(true);
         }

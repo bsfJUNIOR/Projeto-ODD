@@ -6,8 +6,10 @@ package telas;
 
 import entidades.Despesa;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import javax.swing.ButtonGroup;
@@ -90,6 +92,7 @@ public class CadastroDespesas extends javax.swing.JDialog {
                 char c = evt.getKeyChar();
 
                 if (!Character.isDigit(c)
+                        && c != ','
                         && c != '.') {
 
                     evt.consume();
@@ -112,6 +115,41 @@ public class CadastroDespesas extends javax.swing.JDialog {
     cbVariavelDespesa.setSelected(false);
     cbxStatusDespsa.setSelectedIndex(0);
 }
+
+    private SimpleDateFormat criarFormatadorData() {
+        SimpleDateFormat formatador = new SimpleDateFormat("dd/MM/yyyy");
+        formatador.setLenient(false);
+        return formatador;
+    }
+
+    private Double obterValorInformado() {
+        String texto = ctValorDespesa.getText().trim().replace(',', '.');
+
+        if (texto.length() == 0) {
+            return null;
+        }
+
+        try {
+            double valor = Double.parseDouble(texto);
+            if (Double.isNaN(valor) || Double.isInfinite(valor) || valor <= 0) {
+                return null;
+            }
+            return valor;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Date obterDataVencimento() throws ParseException {
+        return criarFormatadorData().parse(ctVencimentoDespesa.getText().trim());
+    }
+
+    private void tratarErro(String operacao, Exception e) {
+        HibernateUtil.rollbackTransaction();
+        HibernateUtil.closeSession();
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Não foi possível " + operacao + ".\nTente novamente.");
+    }
     
     
     public void validaCampos(String operacao){
@@ -184,14 +222,18 @@ public class CadastroDespesas extends javax.swing.JDialog {
                 .createQuery("from Despesa")
                 .list();
 
-            DefaultTableModel modelo =
-                new DefaultTableModel();
+            DefaultTableModel modelo = new DefaultTableModel(
+                    new Object[]{"ID", "Nome", "Valor", "Tipo", "Vencimento"}, 0) {
+                @Override
+                public Class<?> getColumnClass(int coluna) {
+                    return coluna == 0 ? Long.class : String.class;
+                }
 
-            modelo.addColumn("ID");
-            modelo.addColumn("Nome");
-            modelo.addColumn("Valor");
-            modelo.addColumn("Tipo");
-            modelo.addColumn("Vencimento");
+                @Override
+                public boolean isCellEditable(int linha, int coluna) {
+                    return false;
+                }
+            };
 
             for (Despesa d : listaDespesas) {
 
@@ -212,7 +254,7 @@ public class CadastroDespesas extends javax.swing.JDialog {
 
                 NumberFormat.getCurrencyInstance(
                         new Locale("pt", "BR"))
-                        .format(d.getValor()),
+                        .format(d.getValor() == null ? 0.0 : d.getValor()),
 
                 d.getTipo(),
 
@@ -223,14 +265,10 @@ public class CadastroDespesas extends javax.swing.JDialog {
         TabelaCDespesa.setModel(modelo);
 
     } catch (Exception e) {
-
         e.printStackTrace();
-
-        JOptionPane.showMessageDialog(
-                null,
-                "Erro ao carregar tabela!\n"
-                + e.toString()
-        );
+        JOptionPane.showMessageDialog(this, "Não foi possível carregar a tabela de despesas.");
+    } finally {
+        HibernateUtil.closeSession();
     }
 }
     
@@ -544,35 +582,15 @@ public class CadastroDespesas extends javax.swing.JDialog {
     }//GEN-LAST:event_btmnDespesaVoltarActionPerformed
 
     private void btSalvarDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btSalvarDespesaActionPerformed
-        // TODO add your handling code here:
-            try {
+        try {
+            if (!camposObrigatorios()) {
+                return;
+            }
 
-        if (camposObrigatorios()) {
-
-            despesa.setDespesa(
-                    ctNomeDespesa.getText()
-            );
-
-            despesa.setDescricao(
-                    ctDescricaoDespesa.getText()
-            );
-
-            String valorTexto =
-                    ctValorDespesa.getText()
-                    .replace(",", ".");
-
-            despesa.setValor(
-                    Double.parseDouble(valorTexto)
-            );
-
-            SimpleDateFormat sdf =
-                    new SimpleDateFormat("dd/MM/yyyy");
-
-            despesa.setDataVencimento(
-                    sdf.parse(
-                            ctVencimentoDespesa.getText()
-                    )
-            );
+            despesa.setDespesa(ctNomeDespesa.getText().trim());
+            despesa.setDescricao(ctDescricaoDespesa.getText());
+            despesa.setValor(obterValorInformado());
+            despesa.setDataVencimento(obterDataVencimento());
 
             if (cbFixaDespesa.isSelected()) {
 
@@ -589,7 +607,7 @@ public class CadastroDespesas extends javax.swing.JDialog {
                 .toString()
             );
 
-           HibernateUtil.beginTransaction();
+            HibernateUtil.beginTransaction();
 
             if (editando) {
 
@@ -602,8 +620,6 @@ public class CadastroDespesas extends javax.swing.JDialog {
 
             HibernateUtil.commitTransaction();
 
-            HibernateUtil.closeSession();
-            
             editando = false;
 
             JOptionPane.showMessageDialog(
@@ -612,19 +628,13 @@ public class CadastroDespesas extends javax.swing.JDialog {
             );
 
             montaTabela();
+            despesa = new Despesa();
             limparCampos();
             validaCampos("inicio");
-        }
-        
-    } catch (Exception e) {
-
-        e.printStackTrace();
-
-        JOptionPane.showMessageDialog(
-                null,
-                "Erro ao salvar!\n"
-                + e.toString()
-            );
+        } catch (Exception e) {
+            tratarErro("salvar a despesa", e);
+        } finally {
+            HibernateUtil.closeSession();
         }
     }//GEN-LAST:event_btSalvarDespesaActionPerformed
 
@@ -651,16 +661,16 @@ public class CadastroDespesas extends javax.swing.JDialog {
 
         Boolean retorno = true;
 
-        if (ctNomeDespesa.getText().equals("")) {
+        if (ctNomeDespesa.getText().trim().equals("")) {
 
             mensagem += "Nome da despesa obrigatório!\n";
 
             retorno = false;
         }
 
-        if (ctValorDespesa.getText().equals("")) {
+        if (obterValorInformado() == null) {
 
-            mensagem += "Valor obrigatório!\n";
+            mensagem += "Informe um valor maior que zero!\n";
 
             retorno = false;
         }
@@ -670,6 +680,13 @@ public class CadastroDespesas extends javax.swing.JDialog {
             mensagem += "Data inválida!\n";
 
             retorno = false;
+        } else {
+            try {
+                obterDataVencimento();
+            } catch (ParseException e) {
+                mensagem += "Data inválida!\n";
+                retorno = false;
+            }
         }
 
         if (!cbFixaDespesa.isSelected()
@@ -700,46 +717,49 @@ public class CadastroDespesas extends javax.swing.JDialog {
 }
         
     private void TabelaCDespesaMouseClicked(java.awt.event.MouseEvent evt) {
-        despesa =
-                listaDespesas.get(
-                        TabelaCDespesa.getSelectedRow()
-                );
-        ctNomeDespesa.setText(
-                despesa.getDespesa()
-        );
+        int linhaSelecionada = TabelaCDespesa.getSelectedRow();
+        if (linhaSelecionada < 0 || linhaSelecionada >= listaDespesas.size()) {
+            return;
+        }
+
+        despesa = listaDespesas.get(linhaSelecionada);
+        ctNomeDespesa.setText(despesa.getDespesa() == null ? "" : despesa.getDespesa());
         ctDescricaoDespesa.setText(
-                despesa.getDescricao()
+                despesa.getDescricao() == null ? "" : despesa.getDescricao()
         );
         ctValorDespesa.setText(
                 String.valueOf(
-                        despesa.getValor()
+                        despesa.getValor() == null ? "" : despesa.getValor()
                 )
         );
-        ctVencimentoDespesa.setText(
-                new SimpleDateFormat("dd/MM/yyyy")
-                        .format(
-                                despesa.getDataVencimento()
-                        )
-        );
+        ctVencimentoDespesa.setText(despesa.getDataVencimento() == null
+                ? "" : criarFormatadorData().format(despesa.getDataVencimento()));
 
-        if (despesa.getTipo().equals("Fixa")) {
+        cbFixaDespesa.setSelected(false);
+        cbVariavelDespesa.setSelected(false);
+        if ("Fixa".equals(despesa.getTipo())) {
 
             cbFixaDespesa.setSelected(true);
 
-        } else {
+        } else if ("Variável".equals(despesa.getTipo())) {
 
             cbVariavelDespesa.setSelected(true);
         }
         
-        cbxStatusDespsa.setSelectedItem(
-        despesa.getStatus()
-        );
+        cbxStatusDespsa.setSelectedIndex(0);
+        if ("Pendente".equals(despesa.getStatus()) || "Pago".equals(despesa.getStatus())) {
+            cbxStatusDespsa.setSelectedItem(despesa.getStatus());
+        }
 
         validaCampos("selecionado");
     }
     
     private void btEditarDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btEditarDespesaActionPerformed
-        // TODO add your handling code here:
+        if (despesa == null || despesa.getId() == null) {
+            JOptionPane.showMessageDialog(this, "Selecione uma despesa para editar.");
+            return;
+        }
+        editando = true;
         ctNomeDespesa.setEnabled(true);
         ctDescricaoDespesa.setEnabled(true);
         ctValorDespesa.setEnabled(true);
@@ -751,12 +771,14 @@ public class CadastroDespesas extends javax.swing.JDialog {
     }//GEN-LAST:event_btEditarDespesaActionPerformed
 
     private void btExcluirDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btExcluirDespesaActionPerformed
-        // TODO add your handling code here:
-                try {
+        if (despesa == null || despesa.getId() == null) {
+            JOptionPane.showMessageDialog(this, "Selecione uma despesa para excluir.");
+            return;
+        }
+        try {
             HibernateUtil.beginTransaction();
             HibernateUtil.getSession().delete(despesa);
             HibernateUtil.commitTransaction();
-            HibernateUtil.closeSession();
             JOptionPane.showMessageDialog(
                     null,
                     "Despesa excluída!"
@@ -764,17 +786,16 @@ public class CadastroDespesas extends javax.swing.JDialog {
 
             montaTabela();
 
+            despesa = new Despesa();
+            editando = false;
             limparCampos();
 
             validaCampos("inicio");
 
         } catch (Exception e) {
-
-            JOptionPane.showMessageDialog(
-                    null,
-                    "Erro ao excluir!\n"
-                    + e.getMessage()
-            );
+            tratarErro("excluir a despesa", e);
+        } finally {
+            HibernateUtil.closeSession();
         }
     }//GEN-LAST:event_btExcluirDespesaActionPerformed
 
@@ -813,22 +834,6 @@ public class CadastroDespesas extends javax.swing.JDialog {
     }//GEN-LAST:event_ctVencimentoDespesaActionPerformed
 
     private void ctValorDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ctValorDespesaActionPerformed
-        // TODO add your handling code here:
-                ctValorDespesa.addKeyListener(
-                new java.awt.event.KeyAdapter() {
-
-            public void keyTyped(java.awt.event.KeyEvent evt) {
-
-                char c = evt.getKeyChar();
-
-                if (!Character.isDigit(c)
-                        && c != ','
-                        && c != '.') {
-
-                    evt.consume();
-                }
-            }
-        });
     }//GEN-LAST:event_ctValorDespesaActionPerformed
 
     private void cbxStatusDespsaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbxStatusDespsaActionPerformed

@@ -7,6 +7,8 @@ package telas;
 import entidades.Despesa;
 import entidades.Receita;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
@@ -50,14 +52,14 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
         for (Receita r : receitas) {
 
-            totalReceitas += r.getValor();
+            totalReceitas += valorOuZero(r.getValor());
         }
 
         for (Despesa d : despesas) {
 
         if (!"Pago".equals(d.getStatus())) {
 
-            totalDespesas += d.getValor();
+            totalDespesas += valorOuZero(d.getValor());
         }
     }
 
@@ -89,13 +91,29 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
         e.printStackTrace();
 
-        JOptionPane.showMessageDialog(
-                null,
-                "Erro ao carregar resumo!\n"
-                + e.toString()
-        );
+        JOptionPane.showMessageDialog(this, "Não foi possível carregar o resumo financeiro.");
+    } finally {
+        HibernateUtil.closeSession();
     }
 }
+
+    private double valorOuZero(Double valor) {
+        return valor == null ? 0.0 : valor;
+    }
+
+    private Date inicioDoDia(Date data) {
+        Calendar calendario = Calendar.getInstance();
+        calendario.setTime(data);
+        calendario.set(Calendar.HOUR_OF_DAY, 0);
+        calendario.set(Calendar.MINUTE, 0);
+        calendario.set(Calendar.SECOND, 0);
+        calendario.set(Calendar.MILLISECOND, 0);
+        return calendario.getTime();
+    }
+
+    private String formatarData(Date data) {
+        return data == null ? "" : new SimpleDateFormat("dd/MM/yyyy").format(data);
+    }
     
     public void carregarTabelaVencimentos() {
 
@@ -115,22 +133,26 @@ public class MenuPrincipal extends javax.swing.JFrame {
                 )
                 .list();
 
-        DefaultTableModel modelo =
-                new DefaultTableModel();
+        DefaultTableModel modelo = new DefaultTableModel(
+                new Object[]{"Nome", "Vencimento", "Valor", "Status"}, 0) {
+            @Override
+            public Class<?> getColumnClass(int coluna) {
+                return String.class;
+            }
 
-        modelo.addColumn("Nome");
-        modelo.addColumn("Vencimento");
-        modelo.addColumn("Valor");
-        modelo.addColumn("Status");
+            @Override
+            public boolean isCellEditable(int linha, int coluna) {
+                return false;
+            }
+        };
 
-        java.util.Date hoje =
-                new java.util.Date();
+        Date hoje = inicioDoDia(new Date());
 
         for (Despesa d : lista) {
 
             String status = "";
 
-            if (d.getStatus().equals("Pago")) {
+            if ("Pago".equals(d.getStatus())) {
 
                 status = "Pago";
 
@@ -138,14 +160,16 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
                 if (d.getDataVencimento() != null) {
 
-                    if (d.getDataVencimento().before(hoje)) {
+                    Date vencimento = inicioDoDia(d.getDataVencimento());
+
+                    if (vencimento.before(hoje)) {
 
                         status = "Atrasada";
 
                     } else {
 
                         long diferenca =
-                                d.getDataVencimento().getTime()
+                                vencimento.getTime()
                                 - hoje.getTime();
 
                         long dias =
@@ -168,12 +192,11 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
                 d.getDespesa(),
 
-                new SimpleDateFormat("dd/MM/yyyy")
-                .format(d.getDataVencimento()),
+                formatarData(d.getDataVencimento()),
 
                 String.format(
                         "R$ %.2f",
-                        d.getValor()
+                        valorOuZero(d.getValor())
                 ),
 
                 status
@@ -186,11 +209,9 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
         e.printStackTrace();
 
-        JOptionPane.showMessageDialog(
-                null,
-                "Erro ao carregar vencimentos!\n"
-                + e.toString()
-        );
+        JOptionPane.showMessageDialog(this, "Não foi possível carregar os vencimentos.");
+    } finally {
+        HibernateUtil.closeSession();
     }
 }
 
@@ -252,13 +273,13 @@ public class MenuPrincipal extends javax.swing.JFrame {
         jLabel1.setText("RESUMO FINANCEIRO");
 
         jLabel2.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
-        jLabel2.setText("Despesas (Mês):");
+        jLabel2.setText("Despesas Pendentes:");
 
         jLabel3.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
         jLabel3.setText("Saldo Atual:");
 
         jLabel4.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
-        jLabel4.setText("Receitas (Mês):");
+        jLabel4.setText("Receitas:");
 
         ctReceitaMenu.setEditable(false);
 

@@ -4,7 +4,7 @@
  */
 package sistemaodd;
 
-import entidades.Despesa;
+import telas.MenuPrincipal;
 /**
  *
  * @author Usuario
@@ -12,5 +12,6 @@ import entidades.Despesa;
 public class SistemaODD {
 
     public static void main(String[] args) {
+        MenuPrincipal.main(args);
     }
 }

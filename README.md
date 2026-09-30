@@ -121,7 +121,7 @@ A aplicação possui uma interface desktop desenvolvida em **Java Swing**, busca
 | 🔗 **Hibernate**   | Persistência e ORM          |
 | 🐘 **PostgreSQL**  | Banco de dados              |
 | 🧰 **NetBeans 13** | Ambiente de desenvolvimento |
-| 🏗️ **Maven**      | Gerenciamento do projeto    |
+| 🏗️ **Ant / NetBeans** | Gerenciamento e execução do projeto |
 
 
 ---

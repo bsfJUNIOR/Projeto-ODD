@@ -4,7 +4,7 @@
 > **Objetivo deste arquivo:** servir como contexto técnico permanente para uma IA de desenvolvimento (Codex) atuar no projeto ODD.  
 > Este documento diferencia explicitamente o que **já existe** do que é **planejado**. Quando houver conflito entre este documento e o código real, a IA deve analisar o código atual, apontar a divergência e não inventar uma solução.
 
-**Última atualização:** 25/09/2026  
+**Última atualização:** 30/09/2026
 **Repositório:** `bsfJUNIOR/Projeto-ODD`  
 **Branch de referência:** `main`
 
@@ -134,14 +134,24 @@ Despesas com status persistido como `"Pago"` são excluídas do cálculo atual d
 
 **Não assumir que esse modelo financeiro é definitivo.** Ele deve ser revisado antes da implementação de relatórios e indicadores.
 
+## Usuários e autenticação
+
+Foi implementada a fundação de autenticação local:
+
+- tela `Login`, aberta pelo ponto de entrada antes do menu;
+- entidade persistida `Usuario`;
+- gerenciamento de usuários para administradores, com listagem, cadastro, edição e exclusão confirmada;
+- sessão simples em memória para o usuário autenticado;
+- logout, que limpa a sessão e volta ao login.
+
+No primeiro início com a tabela `usuarios` vazia, o sistema cria o administrador inicial `admin` com senha `admin`. Essa senha deve ser trocada pela tela de gerenciamento imediatamente após o primeiro acesso.
+
 ---
 
 # 5. Funcionalidades planejadas – ainda NÃO implementadas
 
 Estas funcionalidades são requisitos futuros e não devem ser tratadas como existentes:
 
-- cadastro/login de usuários;
-- controle de acesso;
 - histórico/auditoria das ações;
 - inatividade em vez de exclusão física;
 - relatórios financeiros;
@@ -162,19 +172,32 @@ A estrutura conhecida de `src` é:
 src/
 ├── entidades/
 │   ├── Despesa.java
-│   └── Receita.java
+│   ├── NivelAcesso.java
+│   ├── Receita.java
+│   └── Usuario.java
 │
 ├── persistencia/
 │   └── HibernateUtil.java
 │
+├── seguranca/
+│   └── SenhaUtil.java
+│
+├── servicos/
+│   └── UsuarioService.java
+│
+├── sessao/
+│   └── SessaoUsuario.java
+│
 ├── sistemaodd/
-│   └── SistemaODD.java (ponto de entrada; abre MenuPrincipal)
+│   └── SistemaODD.java (ponto de entrada; prepara o administrador inicial e abre Login)
 │
 └── telas/
     ├── CadastroDespesas.java
     ├── CadastroDespesas.form
     ├── CadastroReceita.java
     ├── CadastroReceita.form
+    ├── GerenciamentoUsuarios.java
+    ├── Login.java
     ├── MenuPrincipal.java
     └── MenuPrincipal.form
 ```
@@ -320,11 +343,12 @@ Banco:
 
 **PostgreSQL**
 
-Atualmente existem apenas duas entidades/tabelas de negócio:
+Atualmente existem três entidades/tabelas de negócio:
 
 ```text
 despesas
 receita
+usuarios
 ```
 
 Não existe relacionamento entre elas atualmente.
@@ -335,7 +359,7 @@ O Hibernate utiliza:
 hibernate.hbm2ddl.auto = update
 ```
 
-e registra as duas entidades.
+e registra `Despesa`, `Receita` e `Usuario`. A conexão está configurada diretamente em `HibernateUtil` para `jdbc:postgresql://localhost:5432/Odd`; usuário e senha de desenvolvimento também estão no código e continuam uma pendência de segurança para a distribuição final.
 
 ## Regra importante
 
@@ -434,25 +458,17 @@ Antes de implementar, definir:
 
 # 15. Usuários e histórico
 
-Ainda não existe:
+## Implementado nesta etapa
 
-- usuário;
-- senha;
-- login;
-- sessão;
-- permissão;
-- histórico.
+`Usuario` é uma entidade JPA na tabela `usuarios`, com os campos `id`, `usuario`, `senha` e `nivelAcesso`. O nome de usuário é obrigatório e único; senha e nível também são obrigatórios. Os níveis são o enum `ADMIN` e `USUARIO`, persistido como texto.
 
-A ideia futura é identificar quem utiliza o sistema e registrar ações relevantes, por exemplo:
+`SenhaUtil` usa PBKDF2 com sal aleatório e `PBKDF2WithHmacSHA1`, disponível no Java 8. O banco armazena somente o resultado no formato `iterações:sal:hash`, nunca a senha informada.
 
-```text
-Usuário: João
-Ação: Editou despesa
-Registro: Energia elétrica
-Data/Hora: 12/08/2026 14:30
-```
+`SessaoUsuario` mantém em memória somente ID, nome e nível do usuário autenticado. `Login` consulta o usuário pelo nome, valida a senha pelo hash e inicia essa sessão antes de abrir `MenuPrincipal`. O menu exibe o gerenciamento de usuários apenas para `ADMIN`. O logout limpa a sessão, fecha o menu e reabre o login. Não há restrição adicional sobre os CRUDs financeiros nesta etapa.
 
-Não criar um login isolado. O usuário deverá ser pensado junto ao histórico e às ações realizadas.
+## Ainda não implementado
+
+Histórico/auditoria das ações e regras de autorização mais amplas ainda são requisitos futuros.
 
 ---
 
@@ -866,7 +882,7 @@ Nunca representar como implementado algo que existe apenas como requisito futuro
 
 # 24. Estado do projeto em uma frase
 
-> **O ODD atualmente é uma aplicação desktop Java 8/Swing com Hibernate e PostgreSQL, contendo CRUD de Despesas e Receitas com validações básicas e uma tela principal com resumo financeiro global e acompanhamento de vencimentos; o restante do sistema ainda será desenvolvido para transformar essa base em uma solução financeira acadêmica mais completa, mantendo simplicidade e coerência com o escopo.**
+> **O ODD atualmente é uma aplicação desktop Java 8/Swing com Hibernate e PostgreSQL, contendo CRUD de Despesas e Receitas, autenticação local por usuários, sessão e gerenciamento administrativo de usuários; histórico, relatórios, filtros e demais evoluções ainda serão desenvolvidos.**
 
 ---
 

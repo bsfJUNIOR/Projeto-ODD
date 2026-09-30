@@ -13,6 +13,7 @@ import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import persistencia.HibernateUtil;
+import sessao.SessaoUsuario;
 /**
  *
  * @author Usuario
@@ -23,11 +24,34 @@ public class MenuPrincipal extends javax.swing.JFrame {
      * Creates new form MenuPrincipal
      */
     public MenuPrincipal (){
+        if (!SessaoUsuario.estaAutenticado()) {
+            throw new IllegalStateException("É necessário realizar login para abrir o menu principal.");
+        }
         initComponents();
+        configurarMenuUsuario();
         setLocationRelativeTo(null);
         
         carregarResumoFinanceiro();
         carregarTabelaVencimentos();
+    }
+
+    private void configurarMenuUsuario() {
+        javax.swing.JMenu menuUsuario = new javax.swing.JMenu("Usuário");
+        if (SessaoUsuario.ehAdministrador()) {
+            javax.swing.JMenuItem gerenciar = new javax.swing.JMenuItem("Gerenciar usuários");
+            gerenciar.addActionListener(e -> new GerenciamentoUsuarios().setVisible(true));
+            menuUsuario.add(gerenciar);
+        }
+        javax.swing.JMenuItem logout = new javax.swing.JMenuItem("Logout");
+        logout.addActionListener(e -> realizarLogout());
+        menuUsuario.add(logout);
+        jMenuBar1.add(menuUsuario);
+    }
+
+    private void realizarLogout() {
+        SessaoUsuario.encerrar();
+        dispose();
+        new Login().setVisible(true);
     }
     
     public void carregarResumoFinanceiro() {
@@ -445,8 +469,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
     }//GEN-LAST:event_btCadastroDespesaActionPerformed
 
     private void btmnMenuPrincipalSairActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btmnMenuPrincipalSairActionPerformed
-        // TODO add your handling code here:
-        System.exit(0);
+        realizarLogout();
     }//GEN-LAST:event_btmnMenuPrincipalSairActionPerformed
 
     private void btCadastroReceitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btCadastroReceitaActionPerformed
@@ -485,12 +508,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
         }
         //</editor-fold>
 
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new MenuPrincipal().setVisible(true);
-            }
-        });
+        sistemaodd.SistemaODD.main(args);
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

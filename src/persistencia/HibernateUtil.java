@@ -3,6 +3,7 @@ package persistencia;
 
 import entidades.Despesa;
 import entidades.Receita;
+import entidades.Usuario;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -83,6 +84,7 @@ public class HibernateUtil {
                     .setProperty("hibernate.format_sql", "true")
                     .addAnnotatedClass(Despesa.class) 
                     .addAnnotatedClass(Receita.class) 
+                    .addAnnotatedClass(Usuario.class)
                     .buildSessionFactory();
         } catch (RuntimeException e) {
             e.printStackTrace();

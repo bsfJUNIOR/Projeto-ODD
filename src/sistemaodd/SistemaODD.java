@@ -4,7 +4,9 @@
  */
 package sistemaodd;
 
-import telas.MenuPrincipal;
+import javax.swing.SwingUtilities;
+import servicos.UsuarioService;
+import telas.Login;
 /**
  *
  * @author Usuario
@@ -12,6 +14,18 @@ import telas.MenuPrincipal;
 public class SistemaODD {
 
     public static void main(String[] args) {
-        MenuPrincipal.main(args);
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    new UsuarioService().garantirAdministradorInicial();
+                    new Login().setVisible(true);
+                } catch (RuntimeException e) {
+                    javax.swing.JOptionPane.showMessageDialog(null,
+                            "Não foi possível iniciar o sistema. Verifique a conexão com o banco de dados.",
+                            "ODD", javax.swing.JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
     }
 }

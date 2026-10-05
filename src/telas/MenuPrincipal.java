@@ -12,13 +12,19 @@ import java.util.Date;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
-import persistencia.HibernateUtil;
+import servicos.DespesaService;
+import servicos.HistoricoService;
+import servicos.ReceitaService;
+import servicos.FinanceiroService;
+import model.ResumoFinanceiro;
+import model.StatusDespesa;
 import sessao.SessaoUsuario;
 /**
  *
  * @author Usuario
  */
 public class MenuPrincipal extends javax.swing.JFrame {
+    private javax.swing.JTextField campoPesquisa;
 
     /**
      * Creates new form MenuPrincipal
@@ -28,6 +34,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
             throw new IllegalStateException("É necessário realizar login para abrir o menu principal.");
         }
         initComponents();
+        configurarPesquisa();
         configurarMenuUsuario();
         setLocationRelativeTo(null);
         
@@ -36,20 +43,34 @@ public class MenuPrincipal extends javax.swing.JFrame {
     }
 
     private void configurarMenuUsuario() {
-        javax.swing.JMenu menuUsuario = new javax.swing.JMenu("Usuário");
+        javax.swing.JMenu menuUsuario = new javax.swing.JMenu("Usuário: " + SessaoUsuario.getUsuario()
+                + " (" + SessaoUsuario.getNivelAcesso() + ")");
         if (SessaoUsuario.ehAdministrador()) {
             javax.swing.JMenuItem gerenciar = new javax.swing.JMenuItem("Gerenciar usuários");
             gerenciar.addActionListener(e -> new GerenciamentoUsuarios().setVisible(true));
             menuUsuario.add(gerenciar);
+            javax.swing.JMenuItem historico = new javax.swing.JMenuItem("Histórico");
+            historico.addActionListener(e -> new Historico().setVisible(true));
+            menuUsuario.add(historico);
+            javax.swing.JMenuItem relatorios = new javax.swing.JMenuItem("Relatórios mensais");
+            relatorios.addActionListener(e -> new Relatorios().setVisible(true));
+            menuUsuario.add(relatorios);
         }
         javax.swing.JMenuItem logout = new javax.swing.JMenuItem("Logout");
         logout.addActionListener(e -> realizarLogout());
         menuUsuario.add(logout);
         jMenuBar1.add(menuUsuario);
     }
+    private void configurarPesquisa() { javax.swing.JPanel painel=new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT)); campoPesquisa=new javax.swing.JTextField(28); javax.swing.JButton limpar=new javax.swing.JButton("Limpar"); limpar.addActionListener(e->campoPesquisa.setText("")); campoPesquisa.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){public void insertUpdate(javax.swing.event.DocumentEvent e){carregarTabelaVencimentos();}public void removeUpdate(javax.swing.event.DocumentEvent e){carregarTabelaVencimentos();}public void changedUpdate(javax.swing.event.DocumentEvent e){carregarTabelaVencimentos();}});painel.add(new javax.swing.JLabel("Pesquisar despesa:"));painel.add(campoPesquisa);painel.add(limpar);jScrollPane1.setColumnHeaderView(painel); }
 
     private void realizarLogout() {
-        SessaoUsuario.encerrar();
+        try {
+            new HistoricoService().registrar("LOGOUT", "realizou logout.");
+        } catch (RuntimeException e) {
+            JOptionPane.showMessageDialog(this, "Não foi possível registrar o logout.", "ODD", JOptionPane.WARNING_MESSAGE);
+        } finally {
+            SessaoUsuario.encerrar();
+        }
         dispose();
         new Login().setVisible(true);
     }
@@ -58,56 +79,26 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
     try {
 
-        List<Receita> receitas =
-                (List<Receita>) HibernateUtil
-                .getSession()
-                .createQuery("FROM Receita")
-                .list();
-
-        List<Despesa> despesas =
-                (List<Despesa>) HibernateUtil
-                .getSession()
-                .createQuery("FROM Despesa")
-                .list();
-
-        double totalReceitas = 0;
-
-        double totalDespesas = 0;
-
-        for (Receita r : receitas) {
-
-            totalReceitas += valorOuZero(r.getValor());
-        }
-
-        for (Despesa d : despesas) {
-
-        if (!"Pago".equals(d.getStatus())) {
-
-            totalDespesas += valorOuZero(d.getValor());
-        }
-    }
-
-        double saldo =
-                totalReceitas - totalDespesas;
+        ResumoFinanceiro resumo = new FinanceiroService().calcularResumo();
 
         ctReceitaMenu.setText(
                 String.format(
                         "R$ %.2f",
-                        totalReceitas
+                        resumo.getReceitas()
                 )
         );
 
         ctDespesaMenu.setText(
                 String.format(
                         "R$ %.2f",
-                        totalDespesas
+                        resumo.getDespesas()
                 )
         );
 
         ctReceitaSaldo.setText(
                 String.format(
                         "R$ %.2f",
-                        saldo
+                        resumo.getSaldo()
                 )
         );
 
@@ -116,8 +107,6 @@ public class MenuPrincipal extends javax.swing.JFrame {
         e.printStackTrace();
 
         JOptionPane.showMessageDialog(this, "Não foi possível carregar o resumo financeiro.");
-    } finally {
-        HibernateUtil.closeSession();
     }
 }
 
@@ -143,19 +132,8 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
     try {
 
-        List<Despesa> lista =
-                HibernateUtil
-                .getSession()
-                .createQuery(
-                        "FROM Despesa "
-                        + "ORDER BY "
-                        + "CASE "
-                        + "WHEN status = 'Pendente' THEN 0 "
-                        + "WHEN status = 'Pago' THEN 1 "
-                        + "END, "
-                        + "dataVencimento ASC"
-                )
-                .list();
+        List<Despesa> lista = new DespesaService().listarParaVencimentos();
+        String pesquisa = campoPesquisa == null ? "" : campoPesquisa.getText().trim().toLowerCase();
 
         DefaultTableModel modelo = new DefaultTableModel(
                 new Object[]{"Nome", "Vencimento", "Valor", "Status"}, 0) {
@@ -174,43 +152,9 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
         for (Despesa d : lista) {
 
-            String status = "";
-
-            if ("Pago".equals(d.getStatus())) {
-
-                status = "Pago";
-
-            } else {
-
-                if (d.getDataVencimento() != null) {
-
-                    Date vencimento = inicioDoDia(d.getDataVencimento());
-
-                    if (vencimento.before(hoje)) {
-
-                        status = "Atrasada";
-
-                    } else {
-
-                        long diferenca =
-                                vencimento.getTime()
-                                - hoje.getTime();
-
-                        long dias =
-                                diferenca
-                                / (1000 * 60 * 60 * 24);
-
-                        if (dias <= 3) {
-
-                            status = "Vence em breve";
-
-                        } else {
-
-                            status = "Em dia";
-                        }
-                    }
-                }
-            }
+            StatusDespesa situacao = new DespesaService().calcularStatus(d);
+            String status = situacao.toString().replace('_', ' ');
+            if (!pesquisa.isEmpty() && !d.getDespesa().toLowerCase().contains(pesquisa) && !status.toLowerCase().contains(pesquisa)) continue;
 
             modelo.addRow(new Object[]{
 
@@ -234,8 +178,6 @@ public class MenuPrincipal extends javax.swing.JFrame {
         e.printStackTrace();
 
         JOptionPane.showMessageDialog(this, "Não foi possível carregar os vencimentos.");
-    } finally {
-        HibernateUtil.closeSession();
     }
 }
 
@@ -297,7 +239,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
         jLabel1.setText("RESUMO FINANCEIRO");
 
         jLabel2.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
-        jLabel2.setText("Despesas Pendentes:");
+        jLabel2.setText("Despesas:");
 
         jLabel3.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
         jLabel3.setText("Saldo Atual:");

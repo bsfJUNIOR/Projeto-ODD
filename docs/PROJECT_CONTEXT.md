@@ -4,7 +4,7 @@
 > **Objetivo deste arquivo:** servir como contexto técnico permanente para uma IA de desenvolvimento (Codex) atuar no projeto ODD.  
 > Este documento diferencia explicitamente o que **já existe** do que é **planejado**. Quando houver conflito entre este documento e o código real, a IA deve analisar o código atual, apontar a divergência e não inventar uma solução.
 
-**Última atualização:** 30/09/2026
+**Última atualização:** 30/09/2026 — Etapa 3
 **Repositório:** `bsfJUNIOR/Projeto-ODD`  
 **Branch de referência:** `main`
 
@@ -143,6 +143,7 @@ Foi implementada a fundação de autenticação local:
 - gerenciamento de usuários para administradores, com listagem, cadastro, edição e exclusão confirmada;
 - sessão simples em memória para o usuário autenticado;
 - logout, que limpa a sessão e volta ao login.
+- autorização centralizada e histórico de operações relevantes.
 
 No primeiro início com a tabela `usuarios` vazia, o sistema cria o administrador inicial `admin` com senha `admin`. Essa senha deve ser trocada pela tela de gerenciamento imediatamente após o primeiro acesso.
 
@@ -152,10 +153,6 @@ No primeiro início com a tabela `usuarios` vazia, o sistema cria o administrado
 
 Estas funcionalidades são requisitos futuros e não devem ser tratadas como existentes:
 
-- histórico/auditoria das ações;
-- inatividade em vez de exclusão física;
-- relatórios financeiros;
-- filtros;
 - separação clara entre valores pagos e valores ainda devidos;
 - indicadores financeiros adicionais;
 - outras melhorias identificadas durante a análise.
@@ -172,6 +169,7 @@ A estrutura conhecida de `src` é:
 src/
 ├── entidades/
 │   ├── Despesa.java
+│   ├── Historico.java
 │   ├── NivelAcesso.java
 │   ├── Receita.java
 │   └── Usuario.java
@@ -183,6 +181,10 @@ src/
 │   └── SenhaUtil.java
 │
 ├── servicos/
+│   ├── AutorizacaoService.java
+│   ├── DespesaService.java
+│   ├── HistoricoService.java
+│   ├── ReceitaService.java
 │   └── UsuarioService.java
 │
 ├── sessao/
@@ -197,6 +199,7 @@ src/
     ├── CadastroReceita.java
     ├── CadastroReceita.form
     ├── GerenciamentoUsuarios.java
+    ├── Historico.java
     ├── Login.java
     ├── MenuPrincipal.java
     └── MenuPrincipal.form
@@ -211,16 +214,16 @@ A estrutura já separa entidades, persistência, telas e inicialização, mas **
 O fluxo atual é essencialmente:
 
 ```text
-Tela Swing
+Apresentação (`telas`)
     ↓
-HibernateUtil
+Serviços (`servicos`)
     ↓
-Hibernate Session
+Hibernate (`persistencia`)
     ↓
 PostgreSQL
 ```
 
-As telas acessam diretamente o Hibernate e executam consultas HQL.
+As telas usam serviços, e os serviços usam Hibernate diretamente por `HibernateUtil`. Não há camada DAO. As entidades legadas permanecem em `entidades` para evitar quebra dos formulários NetBeans; `model` contém objetos de apoio (`FiltroDespesa`, `FiltroReceita`, `ResumoFinanceiro` e `StatusDespesa`).
 
 Isso funciona para o tamanho atual, mas cria acoplamento entre interface e persistência.
 
@@ -252,11 +255,11 @@ A refatoração deve ser **incremental**, preservando o funcionamento atual.
 
 # 8. Decisão sobre DAO
 
-**DAO não faz parte da arquitetura atual.**
+**DAO não faz parte da arquitetura final.**
 
 A ideia de DAO já foi discutida anteriormente, mas não deve ser reintroduzida automaticamente.
 
-Se uma camada de persistência for necessária, o Codex deve avaliar uma solução simples e coerente, como Repository, em vez de criar DAO apenas por padrão de mercado.
+Para o porte atual, os serviços acessam Hibernate por `HibernateUtil`; criar DAO ou Repository seria uma camada sem benefício proporcional.
 
 Se recomendar Repository ou outra abstração, deve explicar:
 
@@ -343,15 +346,16 @@ Banco:
 
 **PostgreSQL**
 
-Atualmente existem três entidades/tabelas de negócio:
+Atualmente existem quatro entidades/tabelas de negócio:
 
 ```text
 despesas
 receita
 usuarios
+historicos
 ```
 
-Não existe relacionamento entre elas atualmente.
+`Historico` possui relacionamento muitos-para-um com `Usuario`, por `historicos.usuario_id`.
 
 O Hibernate utiliza:
 
@@ -359,7 +363,7 @@ O Hibernate utiliza:
 hibernate.hbm2ddl.auto = update
 ```
 
-e registra `Despesa`, `Receita` e `Usuario`. A conexão está configurada diretamente em `HibernateUtil` para `jdbc:postgresql://localhost:5432/Odd`; usuário e senha de desenvolvimento também estão no código e continuam uma pendência de segurança para a distribuição final.
+e registra `Despesa`, `Receita`, `Usuario` e `Historico`. A conexão está configurada diretamente em `HibernateUtil` para `jdbc:postgresql://localhost:5432/Odd`; usuário e senha de desenvolvimento também estão no código e continuam uma pendência de segurança para a distribuição final.
 
 ## Regra importante
 
@@ -436,15 +440,9 @@ Não alterar essa regra sem analisar o impacto no cálculo financeiro, históric
 
 # 14. Exclusão
 
-Atualmente exclusão física remove o registro do banco.
+Usuário, despesa e receita usam exclusão lógica: o campo `ativo` recebe `false`. Registros inativos não aparecem em listagens, filtros ou cálculos; usuários inativos não autenticam. Os dados e os vínculos de histórico permanecem no banco.
 
-Existe uma intenção futura de substituir isso, onde fizer sentido, por **inatividade/exclusão lógica**, por exemplo:
-
-```text
-ativo = false
-```
-
-Isso ainda não está implementado.
+As entidades mantêm compatibilidade com registros legados cujo campo esteja nulo, tratando-os como ativos.
 
 Antes de implementar, definir:
 
@@ -464,17 +462,33 @@ Antes de implementar, definir:
 
 `SenhaUtil` usa PBKDF2 com sal aleatório e `PBKDF2WithHmacSHA1`, disponível no Java 8. O banco armazena somente o resultado no formato `iterações:sal:hash`, nunca a senha informada.
 
-`SessaoUsuario` mantém em memória somente ID, nome e nível do usuário autenticado. `Login` consulta o usuário pelo nome, valida a senha pelo hash e inicia essa sessão antes de abrir `MenuPrincipal`. O menu exibe o gerenciamento de usuários apenas para `ADMIN`. O logout limpa a sessão, fecha o menu e reabre o login. Não há restrição adicional sobre os CRUDs financeiros nesta etapa.
+`SessaoUsuario` mantém em memória somente ID, nome e nível do usuário autenticado. `Login` consulta o usuário pelo nome, valida a senha pelo hash, inicia a sessão e registra `LOGIN`. O menu mostra discretamente o usuário e seu nível. No logout, registra `LOGOUT`, limpa a sessão, fecha o menu e reabre o login.
+
+`AutorizacaoService` é o único ponto das verificações de permissão. Ambos os níveis autenticados podem executar as operações financeiras por `DespesaService` e `ReceitaService`. `UsuarioService`, `HistoricoService` e as telas administrativas exigem `ADMIN`; portanto, esconder o item de menu é apenas uma melhoria visual, não a proteção efetiva.
+
+`Historico` é uma entidade JPA na tabela `historicos`, com `id`, referência ao `Usuario` responsável, `acao`, `descricao` e `dataHora`. As ações usadas são `LOGIN`, `LOGOUT`, `CADASTRO`, `EDICAO` e `EXCLUSAO`. Nos CRUDs, o registro é persistido na mesma transação da alteração, usando a sessão autenticada; se a alteração falhar, o histórico também não é confirmado. A tela `telas.Historico`, exclusiva para administradores, mostra usuário, ação, descrição e data/hora em ordem decrescente.
+
+A tela de histórico possui um ComboBox simples para mostrar todas as ações ou apenas LOGIN, LOGOUT, CADASTRO, EDICAO ou EXCLUSAO.
+
+Para diagramas futuros: o caso de uso deve separar ADMIN (usuários e histórico) de USUARIO (operações financeiras); o diagrama de classes deve incluir `Historico -> Usuario`, os serviços e `SessaoUsuario`; e o diagrama de sequência do CRUD deve mostrar Tela → Serviço → AutorizacaoService → Hibernate + HistoricoService → PostgreSQL.
 
 ## Ainda não implementado
 
-Histórico/auditoria das ações e regras de autorização mais amplas ainda são requisitos futuros.
+Regras administrativas adicionais, histórico de visualizações e permissões mais granulares continuam requisitos futuros.
 
 ---
 
 # 16. Relatórios e filtros
 
-Ainda não implementados.
+As telas de despesas e receitas possuem barras textuais de pesquisa imediatamente acima das respectivas tabelas. A barra de despesas pesquisa nome e situação/status; a de receitas pesquisa nome e tipo. Ambas aceitam texto parcial, ignoram maiúsculas/minúsculas, atualizam durante a digitação e o botão Limpar restaura todos os registros ativos.
+
+Na tela principal, a pesquisa é uma **barra de pesquisa textual localizada acima da tabela de despesas**, permitindo pesquisar livremente pelo nome ou situação/status da despesa. A busca ignora maiúsculas/minúsculas, aceita texto parcial, atualiza durante a digitação e uma barra vazia restaura todas as despesas ativas.
+
+`Relatorios` permite escolher mês e ano, calcula o resumo com as mesmas regras de `FinanceiroService` e considera somente dados ativos do mês selecionado. Receitas possuem `dataRecebimento`; em cadastros novos ela recebe a data atual quando não informada, permitindo a consulta mensal. Registros antigos sem data não entram em um filtro mensal até receberem data.
+
+O status é calculado por `DespesaService`: `PAGO`, `ATRASADA`, `PROXIMA_DO_VENCIMENTO` (até sete dias) ou `PENDENTE`. `FinanceiroService` calcula receitas, despesas, pagas, pendentes, atrasadas e saldo, sem duplicar cálculo nas telas. O saldo atual é receitas ativas menos despesas ativas.
+
+Datas aceitam oito dígitos e são interpretadas em `dd/MM/yyyy`; valores aceitam notação brasileira e são apresentados em moeda brasileira nas tabelas, sem salvar `R$` no banco.
 
 Relatórios a avaliar:
 
@@ -741,25 +755,9 @@ Definir claramente:
 
 Essas regras devem preceder relatórios.
 
-## Fase 4 – Usuários
+## Fases 4 e 5 – Usuários, permissões e histórico
 
-Projetar:
-
-- entidade;
-- autenticação;
-- senha;
-- sessão;
-- permissões somente se necessárias.
-
-## Fase 5 – Histórico
-
-Definir:
-
-- ações;
-- usuário responsável;
-- data/hora;
-- registro afetado;
-- tipo da ação.
+Concluídas nesta etapa. As próximas evoluções podem detalhar permissões e auditoria, mas devem preservar o fluxo atual de autorização centralizada e os registros de ações já implementados.
 
 ## Fase 6 – Inatividade
 
@@ -882,7 +880,7 @@ Nunca representar como implementado algo que existe apenas como requisito futuro
 
 # 24. Estado do projeto em uma frase
 
-> **O ODD atualmente é uma aplicação desktop Java 8/Swing com Hibernate e PostgreSQL, contendo CRUD de Despesas e Receitas, autenticação local por usuários, sessão e gerenciamento administrativo de usuários; histórico, relatórios, filtros e demais evoluções ainda serão desenvolvidos.**
+> **O ODD atualmente é uma aplicação desktop Java 8/Swing com Hibernate e PostgreSQL, contendo CRUD de Despesas e Receitas, autenticação, autorização por nível, sessão, gerenciamento de usuários e histórico de ações; relatórios, filtros e demais evoluções ainda serão desenvolvidos.**
 
 ---
 
@@ -898,6 +896,42 @@ Ao continuar o projeto:
 6. **Questionar decisões ruins ou pouco justificadas.**
 7. **Ensinar durante a implementação.**
 8. **Evitar overengineering.**
+
+---
+
+# GUIA PARA APRESENTAÇÃO
+
+**Qual é o objetivo do ODD?** Organizar receitas e despesas localmente, com autenticação, controle de acesso, auditoria e acompanhamento financeiro.
+
+**Qual é a arquitetura?** `View Swing → Service → Hibernate/JPA → PostgreSQL`. A view recebe a interação; o service valida regras e permissões; Hibernate persiste as entidades.
+
+**Por que Java Swing e NetBeans?** O projeto é desktop e usa Swing, compatível com o NetBeans 13 e seus formulários visuais originais.
+
+**Como funciona o login?** A senha é comparada com hash PBKDF2. Após validar, os dados mínimos ficam em `SessaoUsuario`.
+
+**Como funciona a autorização?** `AutorizacaoService` verifica se a sessão existe e se o nível é ADMIN quando uma função administrativa é executada.
+
+**Como funciona o histórico?** `HistoricoService` salva usuário responsável, ação, descrição e data/hora para login, logout e alterações relevantes.
+
+**O que é exclusão lógica?** O registro permanece no banco, mas `ativo=false`; por isso não aparece em operações normais nem nos cálculos.
+
+**Como a pesquisa funciona?** A barra acima da tabela do menu filtra despesas ativas pelo nome ou situação/status enquanto o usuário digita.
+
+**Como funciona o relatório mensal?** O administrador escolhe mês e ano; `RelatoriosService` busca dados ativos no período e reutiliza as regras financeiras.
+
+**Fluxo principal:**
+
+```text
+Usuário
+ ↓
+View Swing
+ ↓
+Service
+ ↓
+Hibernate/JPA
+ ↓
+PostgreSQL
+```
 9. **Priorizar funcionalidades de maior valor.**
 10. **Manter o escopo compatível com aproximadamente 2 meses.**
 11. **Pensar nos relatórios antes de alterações importantes no modelo financeiro.**

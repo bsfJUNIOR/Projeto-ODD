@@ -27,6 +27,9 @@ public class Usuario {
     @Column(name = "nivel_acesso", length = 20, nullable = false)
     private NivelAcesso nivelAcesso;
 
+    @Column(columnDefinition = "boolean default true")
+    private Boolean ativo = true;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getUsuario() { return usuario; }
@@ -35,4 +38,6 @@ public class Usuario {
     public void setSenha(String senha) { this.senha = senha; }
     public NivelAcesso getNivelAcesso() { return nivelAcesso; }
     public void setNivelAcesso(NivelAcesso nivelAcesso) { this.nivelAcesso = nivelAcesso; }
+    public boolean isAtivo() { return ativo == null || ativo; }
+    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
 }

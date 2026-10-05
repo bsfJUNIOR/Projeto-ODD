@@ -2,6 +2,7 @@ package persistencia;
 
 
 import entidades.Despesa;
+import entidades.Historico;
 import entidades.Receita;
 import entidades.Usuario;
 import org.hibernate.Session;
@@ -85,6 +86,7 @@ public class HibernateUtil {
                     .addAnnotatedClass(Despesa.class) 
                     .addAnnotatedClass(Receita.class) 
                     .addAnnotatedClass(Usuario.class)
+                    .addAnnotatedClass(Historico.class)
                     .buildSessionFactory();
         } catch (RuntimeException e) {
             e.printStackTrace();

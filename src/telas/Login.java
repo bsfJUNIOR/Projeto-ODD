@@ -14,6 +14,7 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import servicos.UsuarioService;
+import servicos.HistoricoService;
 import sessao.SessaoUsuario;
 
 public class Login extends JFrame {
@@ -69,9 +70,11 @@ public class Login extends JFrame {
                 return;
             }
             SessaoUsuario.iniciar(usuario);
+            new HistoricoService().registrar("LOGIN", "realizou login.");
             dispose();
             new MenuPrincipal().setVisible(true);
         } catch (RuntimeException e) {
+            SessaoUsuario.encerrar();
             JOptionPane.showMessageDialog(this, "Não foi possível realizar o login. Verifique a conexão com o banco.", "Login", JOptionPane.ERROR_MESSAGE);
         } finally {
             java.util.Arrays.fill(senha, '\0');

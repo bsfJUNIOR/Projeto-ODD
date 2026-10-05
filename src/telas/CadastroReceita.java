@@ -13,6 +13,8 @@ import javax.swing.ButtonGroup;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import persistencia.HibernateUtil;
+import servicos.ReceitaService;
+import servicos.FormatoUtil;
 /**
  *
  * @author Usuario
@@ -22,6 +24,7 @@ public class CadastroReceita extends javax.swing.JDialog {
     Receita receita = new Receita();
     List<Receita> listaReceitas = new ArrayList<>();
     boolean editando = false;
+    private javax.swing.JTextField campoPesquisaReceita;
     
     /**
      * Creates new form CadastroReceita
@@ -39,10 +42,12 @@ public class CadastroReceita extends javax.swing.JDialog {
         });
         configurarRadioButtons();
         configurarCampoValor();
+        configurarPesquisaTabela();
         montaTabela();
         validaCampos("inicio");
         setLocationRelativeTo(null);
     }
+    private void configurarPesquisaTabela() { javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT)); campoPesquisaReceita = new javax.swing.JTextField(28); javax.swing.JButton limpar = new javax.swing.JButton("Limpar"); limpar.addActionListener(e -> campoPesquisaReceita.setText("")); campoPesquisaReceita.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() { public void insertUpdate(javax.swing.event.DocumentEvent e) { montaTabela(); } public void removeUpdate(javax.swing.event.DocumentEvent e) { montaTabela(); } public void changedUpdate(javax.swing.event.DocumentEvent e) { montaTabela(); } }); painel.add(new javax.swing.JLabel("Pesquisar receita:")); painel.add(campoPesquisaReceita); painel.add(limpar); jScrollPane1.setColumnHeaderView(painel); }
 
     public void configurarRadioButtons() {
 
@@ -81,21 +86,7 @@ public class CadastroReceita extends javax.swing.JDialog {
 }
 
     private Double obterValorInformado() {
-        String texto = ctValorReceita.getText().trim().replace("R$", "").replace(',', '.').trim();
-
-        if (texto.length() == 0) {
-            return null;
-        }
-
-        try {
-            double valor = Double.parseDouble(texto);
-            if (Double.isNaN(valor) || Double.isInfinite(valor) || valor <= 0) {
-                return null;
-            }
-            return valor;
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return FormatoUtil.valor(ctValorReceita.getText());
     }
 
     private void tratarErro(String operacao, Exception e) {
@@ -199,10 +190,7 @@ public class CadastroReceita extends javax.swing.JDialog {
 
         try {
 
-            listaReceitas =
-                    HibernateUtil.getSession()
-                    .createQuery("from Receita")
-                    .list();
+            listaReceitas = new ReceitaService().listar();
 
             DefaultTableModel modelo = new DefaultTableModel(
                     new Object[]{"ID", "Nome", "Valor", "Tipo"}, 0) {
@@ -218,6 +206,9 @@ public class CadastroReceita extends javax.swing.JDialog {
             };
 
             for (Receita r : listaReceitas) {
+
+                String pesquisa = campoPesquisaReceita == null ? "" : campoPesquisaReceita.getText().trim().toLowerCase();
+                if (!pesquisa.isEmpty() && !r.getNome().toLowerCase().contains(pesquisa) && (r.getTipo() == null || !r.getTipo().toLowerCase().contains(pesquisa))) continue;
 
                 modelo.addRow(new Object[]{
 
@@ -239,8 +230,6 @@ public class CadastroReceita extends javax.swing.JDialog {
 
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Não foi possível carregar a tabela de receitas.");
-        } finally {
-            HibernateUtil.closeSession();
         }
     }
     
@@ -516,18 +505,7 @@ public class CadastroReceita extends javax.swing.JDialog {
                 receita.setTipo("Variável");
             }
 
-            HibernateUtil.beginTransaction();
-
-            if (editando) {
-
-            HibernateUtil.getSession().merge(receita);
-
-            } else {
-
-            HibernateUtil.getSession().persist(receita);
-            }
-
-            HibernateUtil.commitTransaction();
+            new ReceitaService().salvar(receita);
 
             editando = false;
 
@@ -544,8 +522,6 @@ public class CadastroReceita extends javax.swing.JDialog {
             validaCampos("inicio");
         } catch (Exception e) {
             tratarErro("salvar a receita", e);
-        } finally {
-            HibernateUtil.closeSession();
         }
     }//GEN-LAST:event_btSalvarReceitaActionPerformed
 
@@ -563,14 +539,10 @@ public class CadastroReceita extends javax.swing.JDialog {
             JOptionPane.showMessageDialog(this, "Selecione uma receita para excluir.");
             return;
         }
+        if (JOptionPane.showConfirmDialog(this, "Deseja realmente excluir este registro?", "Confirmar exclusão", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
         try {
 
-            HibernateUtil.beginTransaction();
-
-            HibernateUtil.getSession()
-                    .delete(receita);
-
-            HibernateUtil.commitTransaction();
+            new ReceitaService().excluir(receita);
 
             JOptionPane.showMessageDialog(
                     null,
@@ -587,8 +559,6 @@ public class CadastroReceita extends javax.swing.JDialog {
 
         } catch (Exception e) {
             tratarErro("excluir a receita", e);
-        } finally {
-            HibernateUtil.closeSession();
         }
     }//GEN-LAST:event_btExcluirReceitaActionPerformed
 

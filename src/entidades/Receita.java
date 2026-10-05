@@ -26,8 +26,17 @@ public class Receita{
 
     private Double valor;
 
+    @Temporal(TemporalType.DATE)
+    private Date dataRecebimento;
+
     @Column(length = 20)
     private String tipo;
+
+    @Column(columnDefinition = "boolean default true")
+    private Boolean ativo = true;
+
+    public boolean isAtivo() { return ativo == null || ativo; }
+    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
 
     public Long getId() {
         return id;
@@ -60,6 +69,8 @@ public class Receita{
     public void setValor(Double valor) {
         this.valor = valor;
     }
+    public Date getDataRecebimento() { return dataRecebimento; }
+    public void setDataRecebimento(Date dataRecebimento) { this.dataRecebimento = dataRecebimento; }
 
     public String getTipo() {
         return tipo;

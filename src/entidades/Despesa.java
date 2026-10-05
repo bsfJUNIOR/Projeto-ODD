@@ -42,6 +42,9 @@ public class Despesa {
     
     private String status;
 
+    @Column(columnDefinition = "boolean default true")
+    private Boolean ativo = true;
+
     public String getStatus() {
         return status;
     }
@@ -49,6 +52,9 @@ public class Despesa {
     public void setStatus(String status) {
         this.status = status;
     }
+
+    public boolean isAtivo() { return ativo == null || ativo; }
+    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
 
     public Long getId() {
         return id;

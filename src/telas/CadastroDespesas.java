@@ -17,6 +17,8 @@ import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.MaskFormatter;
 import persistencia.HibernateUtil;
+import servicos.DespesaService;
+import servicos.FormatoUtil;
 /**
  *
  * @author Usuario
@@ -25,6 +27,7 @@ public class CadastroDespesas extends javax.swing.JDialog {
     Despesa despesa = new Despesa();
     List<Despesa> listaDespesas = new ArrayList<>();
     boolean editando = false;
+    private javax.swing.JTextField campoPesquisaDespesa;
           
     public CadastroDespesas(java.awt.Frame parent, boolean modal) {
 
@@ -46,6 +49,7 @@ public class CadastroDespesas extends javax.swing.JDialog {
         configurarRadioButtons();
         configurarCampoData();
         configurarCampoValor();
+        configurarPesquisaTabela();
 
         montaTabela();
 
@@ -54,6 +58,7 @@ public class CadastroDespesas extends javax.swing.JDialog {
         setLocationRelativeTo(null);
         
     }
+    private void configurarPesquisaTabela() { javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT)); campoPesquisaDespesa = new javax.swing.JTextField(28); javax.swing.JButton limpar = new javax.swing.JButton("Limpar"); limpar.addActionListener(e -> campoPesquisaDespesa.setText("")); campoPesquisaDespesa.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() { public void insertUpdate(javax.swing.event.DocumentEvent e) { montaTabela(); } public void removeUpdate(javax.swing.event.DocumentEvent e) { montaTabela(); } public void changedUpdate(javax.swing.event.DocumentEvent e) { montaTabela(); } }); painel.add(new javax.swing.JLabel("Pesquisar despesa:")); painel.add(campoPesquisaDespesa); painel.add(limpar); jScrollPane1.setColumnHeaderView(painel); }
     
     public void configurarCampoData() {
 
@@ -123,25 +128,11 @@ public class CadastroDespesas extends javax.swing.JDialog {
     }
 
     private Double obterValorInformado() {
-        String texto = ctValorDespesa.getText().trim().replace(',', '.');
-
-        if (texto.length() == 0) {
-            return null;
-        }
-
-        try {
-            double valor = Double.parseDouble(texto);
-            if (Double.isNaN(valor) || Double.isInfinite(valor) || valor <= 0) {
-                return null;
-            }
-            return valor;
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return FormatoUtil.valor(ctValorDespesa.getText());
     }
 
     private Date obterDataVencimento() throws ParseException {
-        return criarFormatadorData().parse(ctVencimentoDespesa.getText().trim());
+        return FormatoUtil.data(ctVencimentoDespesa.getText());
     }
 
     private void tratarErro(String operacao, Exception e) {
@@ -217,10 +208,7 @@ public class CadastroDespesas extends javax.swing.JDialog {
 
             try {
 
-            listaDespesas =
-                HibernateUtil.getSession()
-                .createQuery("from Despesa")
-                .list();
+            listaDespesas = new DespesaService().listar();
 
             DefaultTableModel modelo = new DefaultTableModel(
                     new Object[]{"ID", "Nome", "Valor", "Tipo", "Vencimento"}, 0) {
@@ -236,6 +224,10 @@ public class CadastroDespesas extends javax.swing.JDialog {
             };
 
             for (Despesa d : listaDespesas) {
+
+                String pesquisa = campoPesquisaDespesa == null ? "" : campoPesquisaDespesa.getText().trim().toLowerCase();
+                String situacao = new DespesaService().calcularStatus(d).toString().replace('_', ' ').toLowerCase();
+                if (!pesquisa.isEmpty() && !d.getDespesa().toLowerCase().contains(pesquisa) && !situacao.contains(pesquisa)) continue;
 
                 String dataFormatada = "";
 
@@ -267,8 +259,6 @@ public class CadastroDespesas extends javax.swing.JDialog {
     } catch (Exception e) {
         e.printStackTrace();
         JOptionPane.showMessageDialog(this, "Não foi possível carregar a tabela de despesas.");
-    } finally {
-        HibernateUtil.closeSession();
     }
 }
     
@@ -607,18 +597,7 @@ public class CadastroDespesas extends javax.swing.JDialog {
                 .toString()
             );
 
-            HibernateUtil.beginTransaction();
-
-            if (editando) {
-
-            HibernateUtil.getSession().merge(despesa);
-
-            } else {
-
-            HibernateUtil.getSession().persist(despesa);
-}
-
-            HibernateUtil.commitTransaction();
+            new DespesaService().salvar(despesa);
 
             editando = false;
 
@@ -633,8 +612,6 @@ public class CadastroDespesas extends javax.swing.JDialog {
             validaCampos("inicio");
         } catch (Exception e) {
             tratarErro("salvar a despesa", e);
-        } finally {
-            HibernateUtil.closeSession();
         }
     }//GEN-LAST:event_btSalvarDespesaActionPerformed
 
@@ -775,10 +752,9 @@ public class CadastroDespesas extends javax.swing.JDialog {
             JOptionPane.showMessageDialog(this, "Selecione uma despesa para excluir.");
             return;
         }
+        if (JOptionPane.showConfirmDialog(this, "Deseja realmente excluir este registro?", "Confirmar exclusão", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
         try {
-            HibernateUtil.beginTransaction();
-            HibernateUtil.getSession().delete(despesa);
-            HibernateUtil.commitTransaction();
+            new DespesaService().excluir(despesa);
             JOptionPane.showMessageDialog(
                     null,
                     "Despesa excluída!"
@@ -794,8 +770,6 @@ public class CadastroDespesas extends javax.swing.JDialog {
 
         } catch (Exception e) {
             tratarErro("excluir a despesa", e);
-        } finally {
-            HibernateUtil.closeSession();
         }
     }//GEN-LAST:event_btExcluirDespesaActionPerformed
 

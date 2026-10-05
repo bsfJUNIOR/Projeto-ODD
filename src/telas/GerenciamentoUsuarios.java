@@ -22,6 +22,7 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 import servicos.UsuarioService;
+import servicos.AutorizacaoService;
 import sessao.SessaoUsuario;
 
 /** Tela de administração de usuários; o acesso é validado pelo MenuPrincipal. */
@@ -37,9 +38,7 @@ public class GerenciamentoUsuarios extends JFrame {
 
     public GerenciamentoUsuarios() {
         super("ODD - Gerenciamento de Usuários");
-        if (!SessaoUsuario.ehAdministrador()) {
-            throw new SecurityException("Acesso permitido somente para administradores.");
-        }
+        AutorizacaoService.exigirAdministrador();
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         montarTela();
         carregarTabela();

@@ -7,6 +7,8 @@ package telas;
 import entidades.Receita;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import javax.swing.ButtonGroup;
@@ -23,6 +25,7 @@ public class CadastroReceita extends javax.swing.JDialog {
     
     Receita receita = new Receita();
     List<Receita> listaReceitas = new ArrayList<>();
+    List<Receita> receitasExibidas = new ArrayList<>();
     boolean editando = false;
     private javax.swing.JTextField campoPesquisaReceita;
     
@@ -83,10 +86,31 @@ public class CadastroReceita extends javax.swing.JDialog {
     
     cbFixaReceita.setSelected(false);
     cbVariavelReceita.setSelected(false);
+    cbxRf.setSelectedIndex(Calendar.getInstance().get(Calendar.MONTH));
+    jTextField1.setText(String.valueOf(Calendar.getInstance().get(Calendar.YEAR)));
 }
+
+    private Date obterPeriodoInformado() {
+        int mes = cbxRf.getSelectedIndex() + 1;
+        int ano;
+        try { ano = Integer.parseInt(jTextField1.getText().trim()); } catch (NumberFormatException e) { return null; }
+        if (mes < 1 || mes > 12 || ano < 1900 || ano > 9999) return null;
+        Calendar calendario = Calendar.getInstance(); calendario.clear(); calendario.set(ano, mes - 1, 1);
+        return calendario.getTime();
+    }
 
     private Double obterValorInformado() {
         return FormatoUtil.valor(ctValorReceita.getText());
+    }
+
+    private void preencherCamposDaReceita(Receita selecionada) {
+        ctNomeReceita.setText(selecionada.getNome() == null ? "" : selecionada.getNome());
+        ctDescricaoReceita.setText(selecionada.getDescricao() == null ? "" : selecionada.getDescricao());
+        ctValorReceita.setText(String.valueOf(selecionada.getValor() == null ? "" : selecionada.getValor()));
+        cbFixaReceita.setSelected("Fixa".equals(selecionada.getTipo()));
+        cbVariavelReceita.setSelected("Variável".equals(selecionada.getTipo()));
+        Calendar periodo = Calendar.getInstance(); if (selecionada.getDataRecebimento() != null) periodo.setTime(selecionada.getDataRecebimento());
+        cbxRf.setSelectedIndex(periodo.get(Calendar.MONTH)); jTextField1.setText(String.valueOf(periodo.get(Calendar.YEAR)));
     }
 
     private void tratarErro(String operacao, Exception e) {
@@ -106,6 +130,8 @@ public class CadastroReceita extends javax.swing.JDialog {
 
             cbFixaReceita.setEnabled(false);
             cbVariavelReceita.setEnabled(false);
+            cbxRf.setEnabled(false);
+            jTextField1.setEnabled(false);
 
             btNovoReceita.setEnabled(true);
 
@@ -122,6 +148,8 @@ public class CadastroReceita extends javax.swing.JDialog {
 
             cbFixaReceita.setEnabled(true);
             cbVariavelReceita.setEnabled(true);
+            cbxRf.setEnabled(true);
+            jTextField1.setEnabled(true);
 
             btNovoReceita.setEnabled(false);
 
@@ -138,6 +166,8 @@ public class CadastroReceita extends javax.swing.JDialog {
 
             cbFixaReceita.setEnabled(false);
             cbVariavelReceita.setEnabled(false);
+            cbxRf.setEnabled(false);
+            jTextField1.setEnabled(false);
 
             btNovoReceita.setEnabled(false);
 
@@ -170,6 +200,11 @@ public class CadastroReceita extends javax.swing.JDialog {
             retorno = false;
         }
 
+        if (obterPeriodoInformado() == null) {
+            mensagem += "Informe mês e ano válidos (mês de 1 a 12 e ano com quatro dígitos).\n";
+            retorno = false;
+        }
+
         if (!mensagem.equals("")) {
             JOptionPane.showMessageDialog(
                     null,
@@ -191,6 +226,7 @@ public class CadastroReceita extends javax.swing.JDialog {
         try {
 
             listaReceitas = new ReceitaService().listar();
+            receitasExibidas = new ArrayList<Receita>();
 
             DefaultTableModel modelo = new DefaultTableModel(
                     new Object[]{"ID", "Nome", "Valor", "Tipo"}, 0) {
@@ -209,6 +245,8 @@ public class CadastroReceita extends javax.swing.JDialog {
 
                 String pesquisa = campoPesquisaReceita == null ? "" : campoPesquisaReceita.getText().trim().toLowerCase();
                 if (!pesquisa.isEmpty() && !r.getNome().toLowerCase().contains(pesquisa) && (r.getTipo() == null || !r.getTipo().toLowerCase().contains(pesquisa))) continue;
+
+                receitasExibidas.add(r);
 
                 modelo.addRow(new Object[]{
 
@@ -257,6 +295,10 @@ public class CadastroReceita extends javax.swing.JDialog {
         btNovoReceita = new javax.swing.JButton();
         cbFixaReceita = new javax.swing.JCheckBox();
         cbVariavelReceita = new javax.swing.JCheckBox();
+        jTextField1 = new javax.swing.JTextField();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
+        cbxRf = new javax.swing.JComboBox<>();
         jMenuBar1 = new javax.swing.JMenuBar();
         btmnVoltarReceita = new javax.swing.JMenu();
         btmnReceitaVoltar = new javax.swing.JMenuItem();
@@ -308,6 +350,11 @@ public class CadastroReceita extends javax.swing.JDialog {
         jLabel4.setText("Valor:");
 
         ctValorReceita.setToolTipText("");
+        ctValorReceita.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ctValorReceitaActionPerformed(evt);
+            }
+        });
 
         jLabel5.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
         jLabel5.setText("Tipo:");
@@ -351,6 +398,14 @@ public class CadastroReceita extends javax.swing.JDialog {
 
         cbVariavelReceita.setText("Variavel");
 
+        jLabel6.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        jLabel6.setText("Mês:");
+
+        jLabel7.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        jLabel7.setText("Ano:");
+
+        cbxRf.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro" }));
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -358,38 +413,40 @@ public class CadastroReceita extends javax.swing.JDialog {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(btNovoReceita))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(ctNomeReceita, javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jLabel3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 305, Short.MAX_VALUE))
                             .addComponent(jLabel4)
                             .addComponent(ctValorReceita, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(ctNomeReceita, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 305, Short.MAX_VALUE))
-                                .addGap(0, 370, Short.MAX_VALUE))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                .addGap(0, 0, Short.MAX_VALUE)
-                                .addComponent(btNovoReceita)))
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                .addComponent(btSalvarReceita)
-                                .addGap(18, 18, 18)
-                                .addComponent(btEditarReceita)
-                                .addGap(18, 18, 18)
-                                .addComponent(btExcluirReceita)
-                                .addGap(18, 18, 18)
-                                .addComponent(btCancelarReceita))
-                            .addComponent(jLabel5)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(cbFixaReceita)
-                                .addGap(18, 18, 18)
-                                .addComponent(cbVariavelReceita))))))
+                        .addGap(0, 370, Short.MAX_VALUE)))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                            .addComponent(btSalvarReceita)
+                            .addGap(18, 18, 18)
+                            .addComponent(btEditarReceita)
+                            .addGap(18, 18, 18)
+                            .addComponent(btExcluirReceita)
+                            .addGap(18, 18, 18)
+                            .addComponent(btCancelarReceita))
+                        .addComponent(jLabel5)
+                        .addGroup(jPanel1Layout.createSequentialGroup()
+                            .addComponent(cbFixaReceita)
+                            .addGap(18, 18, 18)
+                            .addComponent(cbVariavelReceita)))
+                    .addComponent(jLabel6)
+                    .addComponent(jLabel7)
+                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addComponent(jTextField1, javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(cbxRf, javax.swing.GroupLayout.Alignment.LEADING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -409,13 +466,21 @@ public class CadastroReceita extends javax.swing.JDialog {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(ctValorReceita, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(46, 46, 46))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                         .addComponent(jLabel5)
                         .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(cbFixaReceita)
                             .addComponent(cbVariavelReceita))
-                        .addGap(214, 214, 214)))
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel6)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(cbxRf, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(21, 21, 21)
+                        .addComponent(jLabel7)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)))
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btSalvarReceita)
                     .addComponent(btEditarReceita)
@@ -495,6 +560,7 @@ public class CadastroReceita extends javax.swing.JDialog {
             receita.setNome(ctNomeReceita.getText().trim());
             receita.setDescricao(ctDescricaoReceita.getText());
             receita.setValor(obterValorInformado());
+            receita.setDataRecebimento(obterPeriodoInformado());
 
             if (cbFixaReceita.isSelected()) {
 
@@ -563,48 +629,29 @@ public class CadastroReceita extends javax.swing.JDialog {
     }//GEN-LAST:event_btExcluirReceitaActionPerformed
 
     private void btCancelarReceitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btCancelarReceitaActionPerformed
-        // TODO add your handling code here:
-        limparCampos();
-        TabelaCReceita.clearSelection();
-        receita = new Receita();
-        editando = false;
-        validaCampos("inicio");
+        if (editando && receita != null && receita.getId() != null) {
+            preencherCamposDaReceita(receita);
+            editando = false;
+            validaCampos("selecionado");
+        } else {
+            limparCampos(); TabelaCReceita.clearSelection(); receita = new Receita(); editando = false; validaCampos("inicio");
+        }
     }//GEN-LAST:event_btCancelarReceitaActionPerformed
+
+    private void ctValorReceitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ctValorReceitaActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_ctValorReceitaActionPerformed
 
         private void TabelaCReceitaMouseClicked(
             java.awt.event.MouseEvent evt) {
 
         int linhaSelecionada = TabelaCReceita.getSelectedRow();
-        if (linhaSelecionada < 0 || linhaSelecionada >= listaReceitas.size()) {
+        if (linhaSelecionada < 0 || linhaSelecionada >= receitasExibidas.size()) {
             return;
         }
 
-        receita = listaReceitas.get(linhaSelecionada);
-
-        ctNomeReceita.setText(
-                receita.getNome() == null ? "" : receita.getNome()
-        );
-
-        ctDescricaoReceita.setText(
-                receita.getDescricao() == null ? "" : receita.getDescricao()
-        );
-
-        ctValorReceita.setText(
-                String.valueOf(
-                        receita.getValor() == null ? "" : receita.getValor()
-                )
-        );
-
-        cbFixaReceita.setSelected(false);
-        cbVariavelReceita.setSelected(false);
-        if ("Fixa".equals(receita.getTipo())) {
-
-            cbFixaReceita.setSelected(true);
-
-        } else if ("Variável".equals(receita.getTipo())) {
-
-            cbVariavelReceita.setSelected(true);
-        }
+        receita = receitasExibidas.get(linhaSelecionada);
+        preencherCamposDaReceita(receita);
 
         validaCampos("selecionado");
     }
@@ -686,6 +733,7 @@ public class CadastroReceita extends javax.swing.JDialog {
     private javax.swing.JMenu btmnVoltarReceita;
     private javax.swing.JCheckBox cbFixaReceita;
     private javax.swing.JCheckBox cbVariavelReceita;
+    private javax.swing.JComboBox<String> cbxRf;
     private javax.swing.JTextArea ctDescricaoReceita;
     private javax.swing.JTextField ctNomeReceita;
     private javax.swing.JTextField ctValorReceita;
@@ -694,9 +742,12 @@ public class CadastroReceita extends javax.swing.JDialog {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JTextField jTextField1;
     // End of variables declaration//GEN-END:variables
 }

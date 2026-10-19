@@ -6,7 +6,7 @@ package sistemaodd;
 
 import javax.swing.SwingUtilities;
 import servicos.UsuarioService;
-import telas.Login;
+import telas.LoginUsuario;
 /**
  *
  * @author Usuario
@@ -19,7 +19,7 @@ public class SistemaODD {
             public void run() {
                 try {
                     new UsuarioService().garantirAdministradorInicial();
-                    new Login().setVisible(true);
+                    new LoginUsuario().setVisible(true);
                 } catch (RuntimeException e) {
                     javax.swing.JOptionPane.showMessageDialog(null,
                             "Não foi possível iniciar o sistema. Verifique a conexão com o banco de dados.",

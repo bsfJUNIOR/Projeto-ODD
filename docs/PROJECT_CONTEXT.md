@@ -138,7 +138,7 @@ Despesas com status persistido como `"Pago"` são excluídas do cálculo atual d
 
 Foi implementada a fundação de autenticação local:
 
-- tela `Login`, aberta pelo ponto de entrada antes do menu;
+- tela visual `LoginUsuario`, aberta pelo ponto de entrada antes do menu;
 - entidade persistida `Usuario`;
 - gerenciamento de usuários para administradores, com listagem, cadastro, edição e exclusão confirmada;
 - sessão simples em memória para o usuário autenticado;
@@ -460,9 +460,9 @@ Antes de implementar, definir:
 
 `Usuario` é uma entidade JPA na tabela `usuarios`, com os campos `id`, `usuario`, `senha` e `nivelAcesso`. O nome de usuário é obrigatório e único; senha e nível também são obrigatórios. Os níveis são o enum `ADMIN` e `USUARIO`, persistido como texto.
 
-`SenhaUtil` usa PBKDF2 com sal aleatório e `PBKDF2WithHmacSHA1`, disponível no Java 8. O banco armazena somente o resultado no formato `iterações:sal:hash`, nunca a senha informada.
+`SenhaUtil` usa PBKDF2 com sal aleatório, `PBKDF2WithHmacSHA1` e 120.000 iterações, disponível no Java 8. O banco armazena somente o resultado no formato `iterações:sal:hash`, nunca a senha informada. Hashes já existentes continuam verificáveis porque o número de iterações é lido do próprio valor armazenado.
 
-`SessaoUsuario` mantém em memória somente ID, nome e nível do usuário autenticado. `Login` consulta o usuário pelo nome, valida a senha pelo hash, inicia a sessão e registra `LOGIN`. O menu mostra discretamente o usuário e seu nível. No logout, registra `LOGOUT`, limpa a sessão, fecha o menu e reabre o login.
+`SessaoUsuario` mantém em memória somente ID, nome e nível do usuário autenticado. `LoginUsuario` consulta o usuário pelo nome, valida a senha pelo hash, inicia a sessão e registra `LOGIN`. O menu mostra discretamente o usuário e seu nível. No logout, registra `LOGOUT`, limpa a sessão, fecha o menu e reabre o login. Nas telas visuais de login e gerenciamento, o rótulo de senha alterna a visibilidade sem alterar o conteúdo.
 
 `AutorizacaoService` é o único ponto das verificações de permissão. Ambos os níveis autenticados podem executar as operações financeiras por `DespesaService` e `ReceitaService`. `UsuarioService`, `HistoricoService` e as telas administrativas exigem `ADMIN`; portanto, esconder o item de menu é apenas uma melhoria visual, não a proteção efetiva.
 

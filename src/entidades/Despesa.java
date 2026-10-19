@@ -45,6 +45,14 @@ public class Despesa {
     @Column(columnDefinition = "boolean default true")
     private Boolean ativo = true;
 
+    /** Metadados de uma ocorrência mensal virtual; não alteram a tabela existente. */
+    @javax.persistence.Transient
+    private Long origemId;
+    @javax.persistence.Transient
+    private Integer mesReferencia;
+    @javax.persistence.Transient
+    private Integer anoReferencia;
+
     public String getStatus() {
         return status;
     }
@@ -55,6 +63,12 @@ public class Despesa {
 
     public boolean isAtivo() { return ativo == null || ativo; }
     public void setAtivo(Boolean ativo) { this.ativo = ativo; }
+    public Long getOrigemId() { return origemId; }
+    public void setOrigemId(Long origemId) { this.origemId = origemId; }
+    public Integer getMesReferencia() { return mesReferencia; }
+    public void setMesReferencia(Integer mesReferencia) { this.mesReferencia = mesReferencia; }
+    public Integer getAnoReferencia() { return anoReferencia; }
+    public void setAnoReferencia(Integer anoReferencia) { this.anoReferencia = anoReferencia; }
 
     public Long getId() {
         return id;

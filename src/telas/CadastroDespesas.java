@@ -121,6 +121,26 @@ public class CadastroDespesas extends javax.swing.JDialog {
     cbxStatusDespsa.setSelectedIndex(0);
 }
 
+    /** Abre o formulário visual existente já preparado para alterar a despesa indicada. */
+    public void editarDespesa(Despesa selecionada) {
+        if (selecionada == null || selecionada.getId() == null) {
+            throw new IllegalArgumentException("A despesa para edição é obrigatória.");
+        }
+        this.despesa = selecionada;
+        ctNomeDespesa.setText(selecionada.getDespesa() == null ? "" : selecionada.getDespesa());
+        ctDescricaoDespesa.setText(selecionada.getDescricao() == null ? "" : selecionada.getDescricao());
+        ctValorDespesa.setText(selecionada.getValor() == null ? "" : String.valueOf(selecionada.getValor()));
+        ctVencimentoDespesa.setText(selecionada.getDataVencimento() == null ? "" : criarFormatadorData().format(selecionada.getDataVencimento()));
+        cbFixaDespesa.setSelected("Fixa".equals(selecionada.getTipo()));
+        cbVariavelDespesa.setSelected("Variável".equals(selecionada.getTipo()));
+        cbxStatusDespsa.setSelectedItem("Pago".equalsIgnoreCase(selecionada.getStatus()) ? "Pago" : "Pendente");
+        editando = true;
+        ctNomeDespesa.setEnabled(true); ctDescricaoDespesa.setEnabled(true); ctValorDespesa.setEnabled(true);
+        ctVencimentoDespesa.setEnabled(true); cbFixaDespesa.setEnabled(true); cbVariavelDespesa.setEnabled(true);
+        cbxStatusDespsa.setEnabled(true); btSalvarDespesa.setEnabled(true); btEditarDespesa.setEnabled(false);
+        btExcluirDespesa.setEnabled(false); btNovoDespesa.setEnabled(false); btCancelarDespesa.setEnabled(true);
+    }
+
     private SimpleDateFormat criarFormatadorData() {
         SimpleDateFormat formatador = new SimpleDateFormat("dd/MM/yyyy");
         formatador.setLenient(false);

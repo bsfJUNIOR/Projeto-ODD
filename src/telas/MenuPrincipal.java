@@ -19,17 +19,20 @@ import servicos.FinanceiroService;
 import model.ResumoFinanceiro;
 import model.StatusDespesa;
 import sessao.SessaoUsuario;
+
 /**
  *
  * @author Usuario
  */
 public class MenuPrincipal extends javax.swing.JFrame {
+
     private javax.swing.JTextField campoPesquisa;
+    private List<Despesa> despesasExibidas = new java.util.ArrayList<Despesa>();
 
     /**
      * Creates new form MenuPrincipal
      */
-    public MenuPrincipal (){
+    public MenuPrincipal() {
         if (!SessaoUsuario.estaAutenticado()) {
             throw new IllegalStateException("É necessário realizar login para abrir o menu principal.");
         }
@@ -37,7 +40,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
         configurarPesquisa();
         configurarMenuUsuario();
         setLocationRelativeTo(null);
-        
+
         carregarResumoFinanceiro();
         carregarTabelaVencimentos();
     }
@@ -47,13 +50,13 @@ public class MenuPrincipal extends javax.swing.JFrame {
                 + " (" + SessaoUsuario.getNivelAcesso() + ")");
         if (SessaoUsuario.ehAdministrador()) {
             javax.swing.JMenuItem gerenciar = new javax.swing.JMenuItem("Gerenciar usuários");
-            gerenciar.addActionListener(e -> new GerenciamentoUsuarios().setVisible(true));
+            gerenciar.addActionListener(e -> abrirJanelaSecundaria(new GerenciadorUsuario()));
             menuUsuario.add(gerenciar);
             javax.swing.JMenuItem historico = new javax.swing.JMenuItem("Histórico");
-            historico.addActionListener(e -> new Historico().setVisible(true));
+            historico.addActionListener(e -> abrirJanelaSecundaria(new HistoricoUsuario()));
             menuUsuario.add(historico);
             javax.swing.JMenuItem relatorios = new javax.swing.JMenuItem("Relatórios mensais");
-            relatorios.addActionListener(e -> new Relatorios().setVisible(true));
+            relatorios.addActionListener(e -> abrirJanelaSecundaria(new RelatorioFinanceiro()));
             menuUsuario.add(relatorios);
         }
         javax.swing.JMenuItem logout = new javax.swing.JMenuItem("Logout");
@@ -61,9 +64,51 @@ public class MenuPrincipal extends javax.swing.JFrame {
         menuUsuario.add(logout);
         jMenuBar1.add(menuUsuario);
     }
-    private void configurarPesquisa() { javax.swing.JPanel painel=new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT)); campoPesquisa=new javax.swing.JTextField(28); javax.swing.JButton limpar=new javax.swing.JButton("Limpar"); limpar.addActionListener(e->campoPesquisa.setText("")); campoPesquisa.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){public void insertUpdate(javax.swing.event.DocumentEvent e){carregarTabelaVencimentos();}public void removeUpdate(javax.swing.event.DocumentEvent e){carregarTabelaVencimentos();}public void changedUpdate(javax.swing.event.DocumentEvent e){carregarTabelaVencimentos();}});painel.add(new javax.swing.JLabel("Pesquisar despesa:"));painel.add(campoPesquisa);painel.add(limpar);jScrollPane1.setColumnHeaderView(painel); }
+
+    private void abrirJanelaSecundaria(final javax.swing.JFrame tela) {
+        setEnabled(false);
+        tela.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        tela.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                setEnabled(true);
+                toFront();
+                carregarResumoFinanceiro();
+                carregarTabelaVencimentos();
+            }
+        });
+        tela.setLocationRelativeTo(this);
+        tela.setVisible(true);
+    }
+
+    private void configurarPesquisa() {
+        javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+        campoPesquisa = new javax.swing.JTextField(28);
+        javax.swing.JButton limpar = new javax.swing.JButton("Limpar");
+        limpar.addActionListener(e -> campoPesquisa.setText(""));
+        campoPesquisa.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                carregarTabelaVencimentos();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                carregarTabelaVencimentos();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                carregarTabelaVencimentos();
+            }
+        });
+        painel.add(new javax.swing.JLabel("Pesquisar despesa:"));
+        painel.add(campoPesquisa);
+        painel.add(limpar);
+        jScrollPane1.setColumnHeaderView(painel);
+    }
 
     private void realizarLogout() {
+        if (JOptionPane.showConfirmDialog(this, "Deseja realmente sair da conta atual?", "Confirmar logout", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) {
+            return;
+        }
         try {
             new HistoricoService().registrar("LOGOUT", "realizou logout.");
         } catch (RuntimeException e) {
@@ -72,43 +117,43 @@ public class MenuPrincipal extends javax.swing.JFrame {
             SessaoUsuario.encerrar();
         }
         dispose();
-        new Login().setVisible(true);
+        new LoginUsuario().setVisible(true);
     }
-    
+
     public void carregarResumoFinanceiro() {
 
-    try {
+        try {
 
-        ResumoFinanceiro resumo = new FinanceiroService().calcularResumo();
+            ResumoFinanceiro resumo = new FinanceiroService().calcularResumo();
 
-        ctReceitaMenu.setText(
-                String.format(
-                        "R$ %.2f",
-                        resumo.getReceitas()
-                )
-        );
+            ctReceitaMenu.setText(
+                    String.format(
+                            "R$ %.2f",
+                            resumo.getReceitas()
+                    )
+            );
 
-        ctDespesaMenu.setText(
-                String.format(
-                        "R$ %.2f",
-                        resumo.getDespesas()
-                )
-        );
+            ctDespesaMenu.setText(
+                    String.format(
+                            "R$ %.2f",
+                            resumo.getDespesas()
+                    )
+            );
 
-        ctReceitaSaldo.setText(
-                String.format(
-                        "R$ %.2f",
-                        resumo.getSaldo()
-                )
-        );
+            ctReceitaSaldo.setText(
+                    String.format(
+                            "R$ %.2f",
+                            resumo.getSaldo()
+                    )
+            );
 
-    } catch (Exception e) {
+        } catch (Exception e) {
 
-        e.printStackTrace();
+            e.printStackTrace();
 
-        JOptionPane.showMessageDialog(this, "Não foi possível carregar o resumo financeiro.");
+            JOptionPane.showMessageDialog(this, "Não foi possível carregar o resumo financeiro.");
+        }
     }
-}
 
     private double valorOuZero(Double valor) {
         return valor == null ? 0.0 : valor;
@@ -127,59 +172,60 @@ public class MenuPrincipal extends javax.swing.JFrame {
     private String formatarData(Date data) {
         return data == null ? "" : new SimpleDateFormat("dd/MM/yyyy").format(data);
     }
-    
+
     public void carregarTabelaVencimentos() {
 
-    try {
+        try {
 
-        List<Despesa> lista = new DespesaService().listarParaVencimentos();
-        String pesquisa = campoPesquisa == null ? "" : campoPesquisa.getText().trim().toLowerCase();
+            List<Despesa> lista = new DespesaService().listarParaVencimentos();
+            despesasExibidas = new java.util.ArrayList<Despesa>();
+            String pesquisa = campoPesquisa == null ? "" : campoPesquisa.getText().trim().toLowerCase();
 
-        DefaultTableModel modelo = new DefaultTableModel(
-                new Object[]{"Nome", "Vencimento", "Valor", "Status"}, 0) {
-            @Override
-            public Class<?> getColumnClass(int coluna) {
-                return String.class;
+            DefaultTableModel modelo = new DefaultTableModel(
+                    new Object[]{"Nome", "Vencimento", "Valor", "Status"}, 0) {
+                @Override
+                public Class<?> getColumnClass(int coluna) {
+                    return String.class;
+                }
+
+                @Override
+                public boolean isCellEditable(int linha, int coluna) {
+                    return false;
+                }
+            };
+
+            Date hoje = inicioDoDia(new Date());
+
+            for (Despesa d : lista) {
+
+                StatusDespesa situacao = new DespesaService().calcularStatus(d);
+                String status = situacao.toString().replace('_', ' ');
+                if (!pesquisa.isEmpty() && !d.getDespesa().toLowerCase().contains(pesquisa) && !status.toLowerCase().contains(pesquisa)) {
+                    continue;
+                }
+
+                despesasExibidas.add(d);
+
+                modelo.addRow(new Object[]{
+                    d.getDespesa(),
+                    formatarData(d.getDataVencimento()),
+                    String.format(
+                    "R$ %.2f",
+                    valorOuZero(d.getValor())
+                    ),
+                    status
+                });
             }
 
-            @Override
-            public boolean isCellEditable(int linha, int coluna) {
-                return false;
-            }
-        };
+            TabelaPrincipal.setModel(modelo);
 
-        Date hoje = inicioDoDia(new Date());
+        } catch (Exception e) {
 
-        for (Despesa d : lista) {
+            e.printStackTrace();
 
-            StatusDespesa situacao = new DespesaService().calcularStatus(d);
-            String status = situacao.toString().replace('_', ' ');
-            if (!pesquisa.isEmpty() && !d.getDespesa().toLowerCase().contains(pesquisa) && !status.toLowerCase().contains(pesquisa)) continue;
-
-            modelo.addRow(new Object[]{
-
-                d.getDespesa(),
-
-                formatarData(d.getDataVencimento()),
-
-                String.format(
-                        "R$ %.2f",
-                        valorOuZero(d.getValor())
-                ),
-
-                status
-            });
+            JOptionPane.showMessageDialog(this, "Não foi possível carregar os vencimentos.");
         }
-
-        TabelaPrincipal.setModel(modelo);
-
-    } catch (Exception e) {
-
-        e.printStackTrace();
-
-        JOptionPane.showMessageDialog(this, "Não foi possível carregar os vencimentos.");
     }
-}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -206,6 +252,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
         btCadastroDespesa = new javax.swing.JButton();
         jLabel7 = new javax.swing.JLabel();
         btCadastroReceita = new javax.swing.JButton();
+        btEditarResumo = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         btmnMenuSair = new javax.swing.JMenu();
         btmnMenuPrincipalSair = new javax.swing.JMenuItem();
@@ -233,13 +280,13 @@ public class MenuPrincipal extends javax.swing.JFrame {
         });
         jScrollPane1.setViewportView(TabelaPrincipal);
 
-        jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(153, 153, 153)));
+        jPanel1.setBorder(javax.swing.BorderFactory.createEtchedBorder());
 
         jLabel1.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
         jLabel1.setText("RESUMO FINANCEIRO");
 
         jLabel2.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
-        jLabel2.setText("Despesas:");
+        jLabel2.setText("Despesas Pendentes:");
 
         jLabel3.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
         jLabel3.setText("Saldo Atual:");
@@ -301,7 +348,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
         jLabel6.setFont(new java.awt.Font("Arial", 1, 18)); // NOI18N
         jLabel6.setText("PROXIMOS VENCIMENTOS");
 
-        jPanel2.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(153, 153, 153)));
+        jPanel2.setBorder(javax.swing.BorderFactory.createEtchedBorder());
 
         btCadastroDespesa.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
         btCadastroDespesa.setText("Cadastrar Despesa");
@@ -322,6 +369,12 @@ public class MenuPrincipal extends javax.swing.JFrame {
             }
         });
 
+        btEditarResumo.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        btEditarResumo.setText("Editar");
+        btEditarResumo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) { btEditarResumoActionPerformed(evt); }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -333,6 +386,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGap(26, 26, 26)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(btEditarResumo, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btCadastroDespesa)
                     .addComponent(btCadastroReceita))
                 .addGap(0, 457, Short.MAX_VALUE))
@@ -346,7 +400,9 @@ public class MenuPrincipal extends javax.swing.JFrame {
                 .addComponent(btCadastroDespesa, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btCadastroReceita, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btEditarResumo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
 
         btmnMenuSair.setText("Sair");
@@ -386,15 +442,15 @@ public class MenuPrincipal extends javax.swing.JFrame {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jLabel5)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 28, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(12, 12, 12)
                 .addComponent(jLabel6)
-                .addGap(2, 2, 2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 327, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(24, 24, 24))
+                .addGap(8, 8, 8))
         );
 
         pack();
@@ -402,8 +458,8 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
     private void btCadastroDespesaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btCadastroDespesaActionPerformed
         // TODO add your handling code here:
-        CadastroDespesas tela =
-        new CadastroDespesas(this, true);
+        CadastroDespesas tela
+                = new CadastroDespesas(this, true);
         tela.setLocationRelativeTo(null);
         tela.setVisible(true);
         carregarResumoFinanceiro();
@@ -411,17 +467,34 @@ public class MenuPrincipal extends javax.swing.JFrame {
     }//GEN-LAST:event_btCadastroDespesaActionPerformed
 
     private void btmnMenuPrincipalSairActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btmnMenuPrincipalSairActionPerformed
-        realizarLogout();
+        if (JOptionPane.showConfirmDialog(this, "Deseja realmente encerrar o sistema?", "Confirmar encerramento", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
+            dispose();
+            System.exit(0);
+        }
     }//GEN-LAST:event_btmnMenuPrincipalSairActionPerformed
 
     private void btCadastroReceitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btCadastroReceitaActionPerformed
         // TODO add your handling code here:
-        CadastroReceita tela =
-        new CadastroReceita(this, true);
+        CadastroReceita tela
+                = new CadastroReceita(this, true);
         tela.setLocationRelativeTo(null);
         tela.setVisible(true);
         carregarResumoFinanceiro();
     }//GEN-LAST:event_btCadastroReceitaActionPerformed
+
+    private void btEditarResumoActionPerformed(java.awt.event.ActionEvent evt) {
+        int linha = TabelaPrincipal.getSelectedRow();
+        if (linha < 0 || linha >= despesasExibidas.size()) {
+            JOptionPane.showMessageDialog(this, "Selecione uma despesa na tabela para editar.", "Editar despesa", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        CadastroDespesas tela = new CadastroDespesas(this, true);
+        tela.editarDespesa(despesasExibidas.get(linha));
+        tela.setLocationRelativeTo(this);
+        tela.setVisible(true);
+        carregarResumoFinanceiro();
+        carregarTabelaVencimentos();
+    }
 
     /**
      * @param args the command line arguments
@@ -457,6 +530,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
     private javax.swing.JTable TabelaPrincipal;
     private javax.swing.JButton btCadastroDespesa;
     private javax.swing.JButton btCadastroReceita;
+    private javax.swing.JButton btEditarResumo;
     private javax.swing.JMenuItem btmnMenuPrincipalSair;
     private javax.swing.JMenu btmnMenuSair;
     private javax.swing.JTextField ctDespesaMenu;

@@ -14,17 +14,14 @@ import telas.LoginUsuario;
 public class SistemaODD {
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    new UsuarioService().garantirAdministradorInicial();
-                    new LoginUsuario().setVisible(true);
-                } catch (RuntimeException e) {
-                    javax.swing.JOptionPane.showMessageDialog(null,
-                            "Não foi possível iniciar o sistema. Verifique a conexão com o banco de dados.",
-                            "ODD", javax.swing.JOptionPane.ERROR_MESSAGE);
-                }
+        SwingUtilities.invokeLater(() -> {
+            try {
+                new UsuarioService().garantirAdministradorInicial();
+                new LoginUsuario().setVisible(true);
+            } catch (RuntimeException e) {
+                javax.swing.JOptionPane.showMessageDialog(null,
+                        "Não foi possível iniciar o sistema. Verifique a conexão com o banco de dados.",
+                        "ODD", javax.swing.JOptionPane.ERROR_MESSAGE);
             }
         });
     }

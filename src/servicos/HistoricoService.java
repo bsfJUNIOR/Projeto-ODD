@@ -7,7 +7,6 @@ import java.util.List;
 import persistencia.HibernateUtil;
 import sessao.SessaoUsuario;
 
-/** Registra e consulta a auditoria usando o usuário presente na sessão. */
 public class HistoricoService {
 
     public void registrar(String acao, String descricao) {

@@ -7,10 +7,8 @@ import java.security.spec.InvalidKeySpecException;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
-/** Gera e valida hashes PBKDF2 sem dependências adicionais. */
 public final class SenhaUtil {
 
-    /* PBKDF2 é disponível no Java 8 e evita introduzir uma dependência nova. */
     private static final int ITERACOES = 120000;
     private static final int TAMANHO_CHAVE = 256;
 

@@ -21,7 +21,7 @@ import javax.persistence.TemporalType;
 @Entity
 @Table(name = "despesas")
 public class Despesa {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -39,13 +39,12 @@ public class Despesa {
 
     @Temporal(TemporalType.DATE)
     private Date dataVencimento;
-    
+
     private String status;
 
     @Column(columnDefinition = "boolean default true")
     private Boolean ativo = true;
 
-    /** Metadados de uma ocorrência mensal virtual; não alteram a tabela existente. */
     @javax.persistence.Transient
     private Long origemId;
     @javax.persistence.Transient
@@ -61,14 +60,37 @@ public class Despesa {
         this.status = status;
     }
 
-    public boolean isAtivo() { return ativo == null || ativo; }
-    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
-    public Long getOrigemId() { return origemId; }
-    public void setOrigemId(Long origemId) { this.origemId = origemId; }
-    public Integer getMesReferencia() { return mesReferencia; }
-    public void setMesReferencia(Integer mesReferencia) { this.mesReferencia = mesReferencia; }
-    public Integer getAnoReferencia() { return anoReferencia; }
-    public void setAnoReferencia(Integer anoReferencia) { this.anoReferencia = anoReferencia; }
+    public boolean isAtivo() {
+        return ativo == null || ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
+    }
+
+    public Long getOrigemId() {
+        return origemId;
+    }
+
+    public void setOrigemId(Long origemId) {
+        this.origemId = origemId;
+    }
+
+    public Integer getMesReferencia() {
+        return mesReferencia;
+    }
+
+    public void setMesReferencia(Integer mesReferencia) {
+        this.mesReferencia = mesReferencia;
+    }
+
+    public Integer getAnoReferencia() {
+        return anoReferencia;
+    }
+
+    public void setAnoReferencia(Integer anoReferencia) {
+        this.anoReferencia = anoReferencia;
+    }
 
     public Long getId() {
         return id;
@@ -118,4 +140,4 @@ public class Despesa {
         this.dataVencimento = dataVencimento;
     }
 
-} 
+}

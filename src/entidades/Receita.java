@@ -6,13 +6,14 @@ package entidades;
 
 import java.util.Date;
 import javax.persistence.*;
+
 /**
  *
  * @author Usuario
  */
 @Entity
 @Table(name = "receita")
-public class Receita{
+public class Receita {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -35,7 +36,6 @@ public class Receita{
     @Column(columnDefinition = "boolean default true")
     private Boolean ativo = true;
 
-    /** Metadados de uma ocorrência mensal virtual; não alteram a tabela existente. */
     @Transient
     private Long origemId;
     @Transient
@@ -43,14 +43,37 @@ public class Receita{
     @Transient
     private Integer anoReferencia;
 
-    public boolean isAtivo() { return ativo == null || ativo; }
-    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
-    public Long getOrigemId() { return origemId; }
-    public void setOrigemId(Long origemId) { this.origemId = origemId; }
-    public Integer getMesReferencia() { return mesReferencia; }
-    public void setMesReferencia(Integer mesReferencia) { this.mesReferencia = mesReferencia; }
-    public Integer getAnoReferencia() { return anoReferencia; }
-    public void setAnoReferencia(Integer anoReferencia) { this.anoReferencia = anoReferencia; }
+    public boolean isAtivo() {
+        return ativo == null || ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
+    }
+
+    public Long getOrigemId() {
+        return origemId;
+    }
+
+    public void setOrigemId(Long origemId) {
+        this.origemId = origemId;
+    }
+
+    public Integer getMesReferencia() {
+        return mesReferencia;
+    }
+
+    public void setMesReferencia(Integer mesReferencia) {
+        this.mesReferencia = mesReferencia;
+    }
+
+    public Integer getAnoReferencia() {
+        return anoReferencia;
+    }
+
+    public void setAnoReferencia(Integer anoReferencia) {
+        this.anoReferencia = anoReferencia;
+    }
 
     public Long getId() {
         return id;
@@ -83,8 +106,14 @@ public class Receita{
     public void setValor(Double valor) {
         this.valor = valor;
     }
-    public Date getDataRecebimento() { return dataRecebimento; }
-    public void setDataRecebimento(Date dataRecebimento) { this.dataRecebimento = dataRecebimento; }
+
+    public Date getDataRecebimento() {
+        return dataRecebimento;
+    }
+
+    public void setDataRecebimento(Date dataRecebimento) {
+        this.dataRecebimento = dataRecebimento;
+    }
 
     public String getTipo() {
         return tipo;

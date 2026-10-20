@@ -8,7 +8,6 @@ import persistencia.HibernateUtil;
 import seguranca.SenhaUtil;
 import sessao.SessaoUsuario;
 
-/** Operações de usuário, mantendo a persistência no padrão Hibernate já usado no projeto. */
 public class UsuarioService {
 
     private final HistoricoService historicoService = new HistoricoService();

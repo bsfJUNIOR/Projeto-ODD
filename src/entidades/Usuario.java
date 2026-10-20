@@ -30,14 +30,43 @@ public class Usuario {
     @Column(columnDefinition = "boolean default true")
     private Boolean ativo = true;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getUsuario() { return usuario; }
-    public void setUsuario(String usuario) { this.usuario = usuario; }
-    public String getSenha() { return senha; }
-    public void setSenha(String senha) { this.senha = senha; }
-    public NivelAcesso getNivelAcesso() { return nivelAcesso; }
-    public void setNivelAcesso(NivelAcesso nivelAcesso) { this.nivelAcesso = nivelAcesso; }
-    public boolean isAtivo() { return ativo == null || ativo; }
-    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(String usuario) {
+        this.usuario = usuario;
+    }
+
+    public String getSenha() {
+        return senha;
+    }
+
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
+
+    public NivelAcesso getNivelAcesso() {
+        return nivelAcesso;
+    }
+
+    public void setNivelAcesso(NivelAcesso nivelAcesso) {
+        this.nivelAcesso = nivelAcesso;
+    }
+
+    public boolean isAtivo() {
+        return ativo == null || ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
+    }
 }

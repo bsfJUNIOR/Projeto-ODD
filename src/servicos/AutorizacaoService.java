@@ -2,7 +2,6 @@ package servicos;
 
 import sessao.SessaoUsuario;
 
-/** Centraliza as permissões da aplicação local. */
 public final class AutorizacaoService {
 
     private AutorizacaoService() { }

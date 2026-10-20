@@ -11,6 +11,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import model.FiltroReceita;
 import javax.swing.ButtonGroup;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
@@ -225,11 +226,14 @@ public class CadastroReceita extends javax.swing.JDialog {
 
         try {
 
-            listaReceitas = new ReceitaService().listar();
+            Calendar inicio = Calendar.getInstance(); inicio.set(Calendar.DAY_OF_MONTH, 1); inicio.set(Calendar.HOUR_OF_DAY, 0); inicio.set(Calendar.MINUTE, 0); inicio.set(Calendar.SECOND, 0); inicio.set(Calendar.MILLISECOND, 0);
+            Calendar fim = (Calendar) inicio.clone(); fim.add(Calendar.MONTH, 1); fim.add(Calendar.MILLISECOND, -1);
+            FiltroReceita filtroPeriodo = new FiltroReceita(); filtroPeriodo.inicio = inicio.getTime(); filtroPeriodo.fim = fim.getTime();
+            listaReceitas = new ReceitaService().listar(filtroPeriodo);
             receitasExibidas = new ArrayList<Receita>();
 
             DefaultTableModel modelo = new DefaultTableModel(
-                    new Object[]{"ID", "Nome", "Valor", "Tipo"}, 0) {
+                    new Object[]{"ID", "Valor", "Tipo", "Mês"}, 0) {
                 @Override
                 public Class<?> getColumnClass(int coluna) {
                     return coluna == 0 ? Long.class : String.class;
@@ -252,13 +256,12 @@ public class CadastroReceita extends javax.swing.JDialog {
 
                     r.getId(),
 
-                    r.getNome(),
-
                     NumberFormat.getCurrencyInstance(
                             new Locale("pt", "BR"))
                             .format(r.getValor() == null ? 0.0 : r.getValor()),
 
-                    r.getTipo()
+                    r.getTipo(),
+                    r.getDataRecebimento() == null ? "" : new java.text.SimpleDateFormat("MM/yyyy").format(r.getDataRecebimento())
                 });
             }
 
@@ -310,17 +313,17 @@ public class CadastroReceita extends javax.swing.JDialog {
 
         TabelaCReceita.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null}
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
             },
             new String [] {
-                "ID", "Valor", "Tipo", "Vencimento", "Status"
+                "ID", "Valor", "Tipo", "Mês"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Integer.class, java.lang.Double.class, java.lang.String.class, java.lang.Double.class, java.lang.Object.class
+                java.lang.Integer.class, java.lang.Double.class, java.lang.String.class, java.lang.Double.class
             };
 
             public Class getColumnClass(int columnIndex) {

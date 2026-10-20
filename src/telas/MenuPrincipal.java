@@ -26,7 +26,6 @@ import sessao.SessaoUsuario;
  */
 public class MenuPrincipal extends javax.swing.JFrame {
 
-    private javax.swing.JTextField campoPesquisa;
     private List<Despesa> despesasExibidas = new java.util.ArrayList<Despesa>();
 
     /**
@@ -37,32 +36,21 @@ public class MenuPrincipal extends javax.swing.JFrame {
             throw new IllegalStateException("É necessário realizar login para abrir o menu principal.");
         }
         initComponents();
-        configurarPesquisa();
-        configurarMenuUsuario();
+        configurarAcessosDaTela();
+        configurarFiltrosDaTela();
         setLocationRelativeTo(null);
 
         carregarResumoFinanceiro();
         carregarTabelaVencimentos();
     }
 
-    private void configurarMenuUsuario() {
-        javax.swing.JMenu menuUsuario = new javax.swing.JMenu("Usuário: " + SessaoUsuario.getUsuario()
-                + " (" + SessaoUsuario.getNivelAcesso() + ")");
-        if (SessaoUsuario.ehAdministrador()) {
-            javax.swing.JMenuItem gerenciar = new javax.swing.JMenuItem("Gerenciar usuários");
-            gerenciar.addActionListener(e -> abrirJanelaSecundaria(new GerenciadorUsuario()));
-            menuUsuario.add(gerenciar);
-            javax.swing.JMenuItem historico = new javax.swing.JMenuItem("Histórico");
-            historico.addActionListener(e -> abrirJanelaSecundaria(new HistoricoUsuario()));
-            menuUsuario.add(historico);
-            javax.swing.JMenuItem relatorios = new javax.swing.JMenuItem("Relatórios mensais");
-            relatorios.addActionListener(e -> abrirJanelaSecundaria(new RelatorioFinanceiro()));
-            menuUsuario.add(relatorios);
-        }
-        javax.swing.JMenuItem logout = new javax.swing.JMenuItem("Logout");
-        logout.addActionListener(e -> realizarLogout());
-        menuUsuario.add(logout);
-        jMenuBar1.add(menuUsuario);
+    private void configurarAcessosDaTela() {
+        boolean admin = SessaoUsuario.ehAdministrador();
+        btCadastroUsuario.setEnabled(admin); btHistorico.setEnabled(admin); btRelatorioMensal.setEnabled(admin);
+        btCadastroUsuario.addActionListener(e -> { if (admin) abrirJanelaSecundaria(new GerenciadorUsuario()); });
+        btHistorico.addActionListener(e -> { if (admin) abrirJanelaSecundaria(new HistoricoUsuario()); });
+        btRelatorioMensal.addActionListener(e -> { if (admin) abrirJanelaSecundaria(new RelatorioFinanceiro()); });
+        btMenuLogout.addMouseListener(new java.awt.event.MouseAdapter() { @Override public void mouseClicked(java.awt.event.MouseEvent e) { realizarLogout(); } });
     }
 
     private void abrirJanelaSecundaria(final javax.swing.JFrame tela) {
@@ -81,28 +69,10 @@ public class MenuPrincipal extends javax.swing.JFrame {
         tela.setVisible(true);
     }
 
-    private void configurarPesquisa() {
-        javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
-        campoPesquisa = new javax.swing.JTextField(28);
-        javax.swing.JButton limpar = new javax.swing.JButton("Limpar");
-        limpar.addActionListener(e -> campoPesquisa.setText(""));
-        campoPesquisa.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                carregarTabelaVencimentos();
-            }
-
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                carregarTabelaVencimentos();
-            }
-
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                carregarTabelaVencimentos();
-            }
-        });
-        painel.add(new javax.swing.JLabel("Pesquisar despesa:"));
-        painel.add(campoPesquisa);
-        painel.add(limpar);
-        jScrollPane1.setColumnHeaderView(painel);
+    private void configurarFiltrosDaTela() {
+        Calendar agora = Calendar.getInstance(); cbxTabela.setSelectedIndex(agora.get(Calendar.MONTH)); ctAnoTabela.setText(String.valueOf(agora.get(Calendar.YEAR)));
+        btBuscar.addActionListener(e -> carregarTabelaVencimentos());
+        ctBuscaTabela.addActionListener(e -> carregarTabelaVencimentos());
     }
 
     private void realizarLogout() {
@@ -179,7 +149,9 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
             List<Despesa> lista = new DespesaService().listarParaVencimentos();
             despesasExibidas = new java.util.ArrayList<Despesa>();
-            String pesquisa = campoPesquisa == null ? "" : campoPesquisa.getText().trim().toLowerCase();
+            String pesquisa = ctBuscaTabela.getText().trim().toLowerCase();
+            int mes = cbxTabela.getSelectedIndex(); int ano;
+            try { ano = Integer.parseInt(ctAnoTabela.getText().trim()); } catch (NumberFormatException e) { JOptionPane.showMessageDialog(this, "Informe um ano válido."); return; }
 
             DefaultTableModel modelo = new DefaultTableModel(
                     new Object[]{"Nome", "Vencimento", "Valor", "Status"}, 0) {
@@ -197,6 +169,8 @@ public class MenuPrincipal extends javax.swing.JFrame {
             Date hoje = inicioDoDia(new Date());
 
             for (Despesa d : lista) {
+                Calendar periodo = Calendar.getInstance(); if (d.getDataVencimento() == null) continue; periodo.setTime(d.getDataVencimento());
+                if (periodo.get(Calendar.MONTH) != mes || periodo.get(Calendar.YEAR) != ano) continue;
 
                 StatusDespesa situacao = new DespesaService().calcularStatus(d);
                 String status = situacao.toString().replace('_', ' ');
@@ -236,6 +210,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jButton3 = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         TabelaPrincipal = new javax.swing.JTable();
         jPanel1 = new javax.swing.JPanel();
@@ -253,9 +228,21 @@ public class MenuPrincipal extends javax.swing.JFrame {
         jLabel7 = new javax.swing.JLabel();
         btCadastroReceita = new javax.swing.JButton();
         btEditarResumo = new javax.swing.JButton();
+        btHistorico = new javax.swing.JButton();
+        btRelatorioMensal = new javax.swing.JButton();
+        btCadastroUsuario = new javax.swing.JButton();
+        ctBuscaTabela = new javax.swing.JTextField();
+        btBuscar = new javax.swing.JButton();
+        jLabel8 = new javax.swing.JLabel();
+        cbxTabela = new javax.swing.JComboBox<>();
+        jLabel9 = new javax.swing.JLabel();
+        ctAnoTabela = new javax.swing.JTextField();
         jMenuBar1 = new javax.swing.JMenuBar();
         btmnMenuSair = new javax.swing.JMenu();
         btmnMenuPrincipalSair = new javax.swing.JMenuItem();
+        btMenuLogout = new javax.swing.JMenu();
+
+        jButton3.setText("jButton1");
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -339,7 +326,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel3)
                     .addComponent(ctReceitaSaldo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(119, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         jLabel5.setFont(new java.awt.Font("Arial", 2, 36)); // NOI18N
@@ -371,9 +358,15 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
         btEditarResumo.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
         btEditarResumo.setText("Editar");
-        btEditarResumo.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) { btEditarResumoActionPerformed(evt); }
-        });
+
+        btHistorico.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        btHistorico.setText("Historico");
+
+        btRelatorioMensal.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        btRelatorioMensal.setText("Relatorios mensais");
+
+        btCadastroUsuario.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+        btCadastroUsuario.setText("Usuarios");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -386,10 +379,19 @@ public class MenuPrincipal extends javax.swing.JFrame {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGap(26, 26, 26)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(btEditarResumo, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btCadastroDespesa)
-                    .addComponent(btCadastroReceita))
-                .addGap(0, 457, Short.MAX_VALUE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(btCadastroDespesa)
+                        .addGap(18, 18, 18)
+                        .addComponent(btCadastroUsuario, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(btEditarResumo, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(btCadastroReceita, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(btHistorico, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btRelatorioMensal, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addGap(0, 247, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -397,13 +399,27 @@ public class MenuPrincipal extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(32, 32, 32)
-                .addComponent(btCadastroDespesa, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btCadastroDespesa, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btCadastroUsuario, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btCadastroReceita, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(btEditarResumo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btCadastroReceita, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btHistorico, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 119, Short.MAX_VALUE)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btEditarResumo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btRelatorioMensal, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
+
+        btBuscar.setText("Buscar");
+
+        jLabel8.setText("Mês:");
+
+        cbxTabela.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro" }));
+
+        jLabel9.setText("Ano:");
 
         btmnMenuSair.setText("Sair");
 
@@ -417,6 +433,9 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
         jMenuBar1.add(btmnMenuSair);
 
+        btMenuLogout.setText("Logout");
+        jMenuBar1.add(btMenuLogout);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -426,31 +445,50 @@ public class MenuPrincipal extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(19, 19, 19)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(6, 6, 6)
+                        .addComponent(ctBuscaTabela, javax.swing.GroupLayout.PREFERRED_SIZE, 354, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel8)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(cbxTabela, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel9)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(ctAnoTabela, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(btBuscar))
                     .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 538, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 1274, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGroup(layout.createSequentialGroup()
-                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jLabel6)
-                                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addContainerGap(22, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(46, 46, 46)
+                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabel6)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 1274, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(19, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap()
+            .addGroup(layout.createSequentialGroup()
+                .addGap(6, 6, 6)
                 .addComponent(jLabel5)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
+                .addGap(26, 26, 26)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGap(12, 12, 12)
-                .addComponent(jLabel6)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 327, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(8, 8, 8))
+                .addComponent(jLabel6)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cbxTabela)
+                    .addComponent(jLabel9)
+                    .addComponent(ctAnoTabela, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(ctBuscaTabela, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btBuscar))
+                .addGap(20, 20, 20)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 304, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
 
         pack();
@@ -528,14 +566,23 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTable TabelaPrincipal;
+    private javax.swing.JButton btBuscar;
     private javax.swing.JButton btCadastroDespesa;
     private javax.swing.JButton btCadastroReceita;
+    private javax.swing.JButton btCadastroUsuario;
     private javax.swing.JButton btEditarResumo;
+    private javax.swing.JButton btHistorico;
+    private javax.swing.JMenu btMenuLogout;
+    private javax.swing.JButton btRelatorioMensal;
     private javax.swing.JMenuItem btmnMenuPrincipalSair;
     private javax.swing.JMenu btmnMenuSair;
+    private javax.swing.JComboBox<String> cbxTabela;
+    private javax.swing.JTextField ctAnoTabela;
+    private javax.swing.JTextField ctBuscaTabela;
     private javax.swing.JTextField ctDespesaMenu;
     private javax.swing.JTextField ctReceitaMenu;
     private javax.swing.JTextField ctReceitaSaldo;
+    private javax.swing.JButton jButton3;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -543,6 +590,8 @@ public class MenuPrincipal extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;

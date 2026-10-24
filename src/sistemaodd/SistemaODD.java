@@ -14,7 +14,7 @@ import telas.LoginUsuario;
 public class SistemaODD {
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
+            SwingUtilities.invokeLater(() -> {
             try {
                 new UsuarioService().garantirAdministradorInicial();
                 new LoginUsuario().setVisible(true);

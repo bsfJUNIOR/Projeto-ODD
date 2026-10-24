@@ -59,6 +59,7 @@ public class HistoricoUsuario extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
+        tbHist.setFont(new java.awt.Font("Arial", 0, 16)); // NOI18N
         tbHist.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},

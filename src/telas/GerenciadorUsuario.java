@@ -171,11 +171,21 @@ public class GerenciadorUsuario extends javax.swing.JFrame {
         jLabel3.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
         jLabel3.setText("Nível:");
 
+        jButton1.setBackground(new java.awt.Color(255, 102, 102));
         jButton1.setText("Excluir");
+        jButton1.setBorder(new javax.swing.border.SoftBevelBorder(javax.swing.border.BevelBorder.RAISED));
 
+        USUARIO.setBackground(new java.awt.Color(102, 204, 255));
         USUARIO.setText("Salvar");
+        USUARIO.setBorder(new javax.swing.border.SoftBevelBorder(javax.swing.border.BevelBorder.RAISED));
 
+        btAdmNovo.setBackground(new java.awt.Color(102, 204, 255));
         btAdmNovo.setText("Novo");
+        btAdmNovo.setBorder(new javax.swing.border.SoftBevelBorder(javax.swing.border.BevelBorder.RAISED));
+
+        jTextField1.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
+
+        jTextField2.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
 
         cbxAdmUsuario.setFont(new java.awt.Font("Arial", 0, 15)); // NOI18N
         cbxAdmUsuario.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Selecionar", "ADMIN", "USUARIO" }));
@@ -185,6 +195,7 @@ public class GerenciadorUsuario extends javax.swing.JFrame {
             }
         });
 
+        tbAdmUsuario.setFont(new java.awt.Font("Arial", 0, 16)); // NOI18N
         tbAdmUsuario.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null},
@@ -253,7 +264,7 @@ public class GerenciadorUsuario extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel3)
                     .addComponent(cbxAdmUsuario, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 27, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 25, Short.MAX_VALUE)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 450, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(46, 46, 46)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)

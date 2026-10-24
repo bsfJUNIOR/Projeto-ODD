@@ -116,22 +116,27 @@ public class LoginUsuario extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
+        btSairUsuario.setBackground(new java.awt.Color(255, 102, 102));
         btSairUsuario.setFont(new java.awt.Font("Arial", 1, 24)); // NOI18N
         btSairUsuario.setText("sair");
+        btSairUsuario.setBorder(new javax.swing.border.SoftBevelBorder(javax.swing.border.BevelBorder.RAISED));
         btSairUsuario.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btSairUsuarioActionPerformed(evt);
             }
         });
 
+        btEntrarUsuario.setBackground(new java.awt.Color(102, 204, 255));
         btEntrarUsuario.setFont(new java.awt.Font("Arial", 1, 24)); // NOI18N
         btEntrarUsuario.setText("Entrar");
+        btEntrarUsuario.setBorder(new javax.swing.border.SoftBevelBorder(javax.swing.border.BevelBorder.RAISED));
         btEntrarUsuario.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btEntrarUsuarioActionPerformed(evt);
             }
         });
 
+        ctUsuario.setFont(new java.awt.Font("Arial", 0, 18)); // NOI18N
         ctUsuario.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ctUsuarioActionPerformed(evt);
@@ -142,6 +147,7 @@ public class LoginUsuario extends javax.swing.JFrame {
 
         jLabel2.setText("Usuario:");
 
+        ctSenhaUsuario.setFont(new java.awt.Font("Arial", 0, 24)); // NOI18N
         ctSenhaUsuario.setText("jPasswordField1");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -175,7 +181,7 @@ public class LoginUsuario extends javax.swing.JFrame {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap(24, Short.MAX_VALUE)
+                .addContainerGap(26, Short.MAX_VALUE)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jLabel2)
